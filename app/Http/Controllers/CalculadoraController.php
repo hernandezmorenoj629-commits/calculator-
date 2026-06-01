@@ -14,7 +14,7 @@ class CalculadoraController extends Controller
     {
         // Creamos la lista manualmente
         $vendedores = collect([
-            (object)['id' => 1, 'name' => 'Braulio Duarte-Jefe deVenta Empresarial-7886-2971'],
+            (object)['id' => 1, 'name' => 'Braulio Duarte-Jefe de Venta Empresarial-7886-2971'],
             (object)['id' => 2, 'name' => 'Richard Toribio-Venta Domiciliar-75591323'],
             (object)['id' => 3, 'name' => 'Angie Castro - Venta Domiciliar- 8786-0121'],
             (object)['id' => 4, 'name' => 'Stephany Mejia-Gerente Comercial- 8998-0892'],
