@@ -139,23 +139,36 @@
     <div class="row justify-content-center">
         <div class="col-lg-11">
 
-            <div class="card header-card">
-                <div class="card-body d-flex align-items-center justify-content-between py-2 px-4">
-                    <div class="d-flex align-items-center">
-                        <img id="img-logo" src="/imagen/LOGOPNG.png" alt="Logo" style="max-height: 45px;" class="me-3" crossorigin="anonymous" onerror="this.src='https://via.placeholder.com/150x50?text=LOGO'">
-                        <div>
-                            <h6 class="mb-0 fw-bold" style="font-size: 1.1rem;">Cotizador Pro</h6>
-                            <select id="empresa_selector" class="form-select form-select-sm border-0 fw-semibold p-0 text-muted" onchange="cambiarEmpresa()" style="width: auto; background-color: transparent;">
-                                <option value="Espumas">Espumas Nicaragua</option>
-                                <option value="Pethelios">Pethelios Nicaragua</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger px-3" onclick="limpiarTodo()" style="font-size: 0.75rem; border-radius: 20px;">
-                        <i class="fas fa-sync-alt me-1"></i> Reiniciar
-                    </button>
-                </div>
+           <div class="card header-card shadow-sm border-0">
+    <div class="card-body d-flex align-items-center justify-content-between py-2 px-4 flex-wrap gap-3">
+
+        <div class="d-flex align-items-center" style="min-width: 220px;">
+            <img id="img-logo" src="/imagen/LOGOPNG.png" alt="Logo" style="max-height: 45px;" class="me-3" crossorigin="anonymous" onerror="this.src='https://via.placeholder.com/150x50?text=LOGO'">
+            <div>
+                <h6 class="mb-0 fw-bold" style="font-size: 1.1rem;">Cotizador Pro</h6>
+                <select id="empresa_selector" class="form-select form-select-sm border-0 fw-semibold p-0 text-muted" onchange="cambiarEmpresa(); cambiarMonedaPorEmpresa();" style="width: auto; background-color: transparent; outline: none; box-shadow: none;">
+                    <option value="Espumas">Espumas Nicaragua</option>
+                    <option value="Pethelios">Pethelios Nicaragua</option>
+                </select>
             </div>
+        </div>
+
+        <div class="flex-grow-1 text-center">
+            <div class="d-inline-flex align-items-center bg-light p-2 px-3 rounded border">
+                <label class="fw-bold text-secondary text-uppercase me-2 mb-0" style="font-size: 0.75rem; letter-spacing: 0.5px;">Moneda:</label>
+                <select id="moneda_selector" class="form-select form-select-sm fw-bold text-primary border-0 bg-transparent p-0" style="width: 125px; cursor: pointer; outline: none; box-shadow: none;">
+                    </select>
+            </div>
+        </div>
+
+        <div class="text-end" style="min-width: 220px;">
+            <button type="button" class="btn btn-sm btn-outline-danger px-3" onclick="limpiarTodo()" style="font-size: 0.75rem; border-radius: 20px;">
+                <i class="fas fa-sync-alt me-1"></i> Reiniciar
+            </button>
+        </div>
+
+    </div>
+</div>
 <div class="mb-4">
     <div class="form-check form-switch mb-3">
         <input class="form-check-input" type="checkbox" id="activar_cliente" onchange="toggleCliente()" autocomplete="off">
@@ -164,9 +177,14 @@
         </label>
     </div>
 </div>
-
 <div id="seccion_cliente" class="card p-4 mb-4" style="display: none;">
-    <h6 class="seccion-titulo"><i class="fas fa-user me-2"></i> DATOS DEL CLIENTE</h6>
+    <div class="d-flex justify-content-between align-items-center">
+        <h6 class="seccion-titulo mb-0"><i class="fas fa-user me-2"></i>DATOS DEL CLIENTE</h6>
+
+        <div id="contenedor-proforma-vista" class="badge bg-danger fs-6 p-2" style="display: none;">
+            No. Proforma: <span id="num-proforma-dinamico">...</span>
+        </div>
+    </div>
     <hr>
     <div class="card-body">
         <div class="row g-3">
@@ -183,12 +201,15 @@
                 <input type="text" name="cliente_telefono" class="form-control" placeholder="0000-0000">
             </div>
 
-            <div class="col-md-6">
+            <div class="col-md-4">
+                <label class="form-label">Contacto</label>
+                <input type="text" name="cliente_contacto" class="form-control" placeholder="Nombre del contacto">
+            </div>
+            <div class="col-md-4">
                 <label class="form-label">Cédula / RUC</label>
                 <input type="text" name="cliente_id" class="form-control" placeholder="ID del cliente">
             </div>
-
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label class="form-label text-primary" style="font-weight: bold;">Vendedor Asignado</label>
                 <select name="user_id" class="form-select">
                     <option value="">Seleccione un vendedor...</option>
@@ -217,30 +238,31 @@
                     </div>
                 </div>
 
-                <h6 class="seccion-titulo"><i class="fas fa-th-list me-2"></i> <span id="label_seccion_configuracion">Configuración de Servicios</span></h6>
-                <div class="row g-3 align-items-end mb-4">
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold" id="label_categoria">Categoría</label>
-                        <select id="cat_servicio" class="form-select" onchange="filtrarServicios()"></select>
-                    </div>
-                    <div class="col-md-3" id="container_subtipo_vehiculo" style="display:none;">
-                        <label class="form-label fw-semibold">Tipo de Vehículo</label>
-                        <select id="subtipo_vehiculo" class="form-select" onchange="filtrarItemsVehiculo()"></select>
-                    </div>
-                    <div class="col-md-3 flex-grow-1">
-                        <label class="form-label fw-semibold" id="label_servicio">Servicio a Realizar</label>
-                        <select id="item_servicio" class="form-select"></select>
-                    </div>
-                    <div class="col-md-1" style="min-width: 80px;">
-                        <label class="form-label fw-semibold">Cant.</label>
-                        <input type="number" id="cant_servicio" class="form-control text-center" value="1" min="1">
-                    </div>
-                <div id="contenedor-descripcion" class="col-12" style="display: none; margin-bottom: 15px;">
-    <label style="font-weight: bold; color: #1a4a8e;">
-        Descripción del Servicio Especial <span style="color:red;">*</span>
+            <h6 class="seccion-titulo"><i class="fas fa-th-list me-2"></i> <span id="label_seccion_configuracion">Configuración de Servicios</span></h6>
+<div class="row g-3 align-items-end mb-4">
+    <div class="col-md-3">
+        <label class="form-label fw-semibold" id="label_categoria">Categoría</label>
+        <select id="cat_servicio" class="form-select" onchange="filtrarServicios(); cambiarRequisitosDescripcion();"></select>
+    </div>
+    <div class="col-md-3" id="container_subtipo_vehiculo" style="display:none;">
+        <label class="form-label fw-semibold">Tipo de Vehículo</label>
+        <select id="subtipo_vehiculo" class="form-select" onchange="filtrarItemsVehiculo()"></select>
+    </div>
+    <div class="col-md-3 flex-grow-1">
+        <label class="form-label fw-semibold" id="label_servicio">Servicio a Realizar</label>
+        <select id="item_servicio" class="form-select"></select>
+    </div>
+    <div class="col-md-1" style="min-width: 80px;">
+        <label class="form-label fw-semibold">Cant.</label>
+        <input type="number" id="cant_servicio" class="form-control text-center" value="1" min="1">
+    </div>
+
+    <div id="contenedor-descripcion" class="col-12" style="margin-bottom: 15px; display: block !important;">
+    <label id="label_descripcion_dinamica" style="font-weight: bold; color: #1a4a8e;">
+        Descripción del Servicio
     </label>
     <textarea id="descripcion_servicio" class="form-control" rows="2"
-              placeholder="Escriba los detalles aquí (Campo obligatorio)..." required></textarea>
+              placeholder="Escriba los detalles aquí..."></textarea>
 </div>
 
 <div class="col-md-auto">
@@ -248,7 +270,7 @@
         <i class="fas fa-plus me-2"></i>Agregar
     </button>
 </div>
-
+</div>
                 <div id="seccion_extras" style="display:none;">
                     <h6 class="seccion-titulo"><i class="fas fa-plus-circle me-2"></i> Cargos Extras por Mobiliario</h6>
                     <div class="row mb-4" id="contenedor_checks_extras"></div>
@@ -300,6 +322,7 @@
 </div>
 
 <script>
+    const TASA_CAMBIO = 37;
     const logisticaEmpresas = {
         "Espumas": {
             "Managua": {
@@ -717,39 +740,87 @@
         if(serviciosGlobal[emp]) Object.keys(serviciosGlobal[emp]).forEach(c => catS.innerHTML += `<option value="${c}">${c}</option>`);
     }
 
-   function filtrarServicios() {
-    const emp = document.getElementById('empresa_selector').value;
-    const cat = document.getElementById('cat_servicio').value;
+ function filtrarServicios() {
+    // 1. Capturamos los elementos de la interfaz
+    const empSelector = document.getElementById('empresa_selector');
+    const catSelect = document.getElementById('cat_servicio');
     const itemS = document.getElementById('item_servicio');
     const vH = document.getElementById('container_subtipo_vehiculo');
 
-    itemS.innerHTML = '<option value="">--</option>';
-    vH.style.display = (cat === "Vehículo") ? "block" : "none";
+    if (!catSelect || !itemS) return;
 
-    if (cat && cat !== "Vehículo") {
-        serviciosGlobal[emp][cat].forEach(s => {
-            const opt = document.createElement('option');
-            opt.value = s.nombre;
-            opt.textContent = s.nombre;
+    // Obtenemos los valores actuales de los selectores
+    const emp = empSelector ? empSelector.value : "";
+    const cat = catSelect.value;
 
-            // Si el servicio tiene precios por rango (dinámico)
-            if (s.dinamico) {
-          opt.dataset.dinamico = "true";
-                      opt.dataset.pbajo = s.precio_bajo;
-                opt.dataset.palto = s.precio_alto;
-                opt.dataset.limite = s.limite;
-            } else {
-                // Si es un servicio normal con precio único
-                opt.dataset.precio = s.precio;
-            }
-            itemS.appendChild(opt);
-        });
-    } else if (cat === "Vehículo") {
+    // ================================================================
+    // CONTROL VISUAL FIJO: Sincronizar placeholders y textos dinámicos
+    // ================================================================
+    if (typeof cambiarRequisitosDescripcion === "function") {
+        cambiarRequisitosDescripcion();
+    }
+
+    // Si la categoría se limpia, viene vacía o dice "Seleccione...", reseteamos limpiamente
+    if (!cat || cat === "" || cat.includes("Seleccione")) {
+        itemS.innerHTML = '<option value="">--</option>';
+      //  if (vH) vH.style.display = "none";
+        return; // Salimos temprano para evitar que rompa el renderizado de datos
+    }
+
+    // Control visual exclusivo para el contenedor de vehículos
+    if (vH) {
+        vH.style.display = (cat === "Vehículo") ? "block" : "none";
+    }
+
+    // Si no hay una empresa seleccionada en el selector superior, detenemos el proceso
+    if (!emp) return;
+
+    // ================================================================
+    // CARGA EN CASCADA: Servicios Estándar (No Vehículos)
+    // ================================================================
+    if (cat !== "Vehículo") {
+        itemS.innerHTML = '<option value="">-- Seleccione un Servicio --</option>';
+
+        if (serviciosGlobal[emp] && serviciosGlobal[emp][cat]) {
+            serviciosGlobal[emp][cat].forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.nombre;
+                opt.textContent = s.nombre;
+
+                // Tu lógica nativa para manejar rangos dinámicos o precios únicos
+                if (s.dinamico) {
+                    opt.dataset.dinamico = "true";
+                    opt.dataset.pbajo = s.precio_bajo;
+                    opt.dataset.palto = s.precio_alto;
+                    opt.dataset.limite = s.limite;
+                } else {
+                    opt.dataset.precio = s.precio;
+                }
+                itemS.appendChild(opt);
+            });
+        }
+    }
+    // ================================================================
+    // CARGA EN CASCADA: Lógica para "Vehículo"
+    // ================================================================
+    else if (cat === "Vehículo") {
         const subV = document.getElementById('subtipo_vehiculo');
-        subV.innerHTML = '<option value="">Tipo...</option>';
-        Object.keys(serviciosGlobal[emp][cat]).forEach(sv => {
-            subV.innerHTML += `<option value="${sv}">${sv}</option>`;
-        });
+        itemS.innerHTML = '<option value="">--</option>'; // Mantiene el selector de servicios preparado
+
+        if (subV && serviciosGlobal[emp] && serviciosGlobal[emp][cat]) {
+            subV.innerHTML = '<option value="">Tipo...</option>';
+            Object.keys(serviciosGlobal[emp][cat]).forEach(sv => {
+                const opt = document.createElement('option');
+                opt.value = sv;
+                opt.textContent = sv;
+                subV.appendChild(opt);
+            });
+
+            // Si el usuario ya tenía preseleccionado un subtipo, forzamos que cargue sus ítems
+            if (typeof filtrarItemsVehiculo === "function") {
+                filtrarItemsVehiculo();
+            }
+        }
     }
 }
 
@@ -831,8 +902,11 @@
 
     // LIMPIAR CAMPOS
     descripcionInput.value = "";
-    if(contenedorDesc) contenedorDesc.style.display = 'none';
+   // if(contenedorDesc) contenedorDesc.style.display = 'none';
     cantInput.value = 1;
+    if (typeof cambiarRequisitosDescripcion === "function") {
+    cambiarRequisitosDescripcion();
+}
 
     console.log("Servicio agregado correctamente al resumen.");
 }
@@ -863,39 +937,55 @@
         renderLista();
     }
 
-    function renderLista() {
-        const emp = document.getElementById('empresa_selector').value;
-        const moneda = (emp === "Pethelios") ? "$" : "C$";
-        const listaV = document.getElementById('lista_visual');
-        document.getElementById('badge-items').innerText = `${carrito.length} items`;
+ function renderLista() {
+    const emp = document.getElementById('empresa_selector').value;
 
-        if(carrito.length === 0) {
-            listaV.innerHTML = '<div class="p-5 text-center text-muted"><p class="small mb-0">No hay servicios seleccionados</p></div>';
-            document.getElementById('resumen_totales').innerHTML = "";
-            return;
-        }
+    // 1. Captura correctamente la moneda elegida en el centro de tu barra blanca
+    const moneda = document.getElementById('moneda_selector')?.value || "C$";
 
-        let subtotal = 0;
-        listaV.innerHTML = "";
-        carrito.forEach((item, index) => {
-            subtotal += item.total;
-            listaV.innerHTML += `
-                <div class="item-servicio">
-                    <div class="d-flex align-items-center">
-                        <button class="btn btn-link text-danger p-0 me-3" onclick="eliminarItem(${index})"><i class="fas fa-times-circle"></i></button>
-                        <div><span class="fw-bold">${item.nombre}</span> ${item.cant > 1 ? `<span class="small text-muted">x${item.cant}</span>` : ''}</div>
-                    </div>
-                    <span class="fw-bold">${moneda} ${item.total.toLocaleString()}</span>
-                </div>`;
-        });
+    const listaV = document.getElementById('lista_visual');
+    document.getElementById('badge-items').innerText = `${carrito.length} items`;
 
-        const calc = calcularTotales(subtotal);
-        document.getElementById('resumen_totales').innerHTML = `
-            <div class="small">Subtotal: ${moneda} ${subtotal.toFixed(2)}</div>
-            ${calc.ahorro > 0 ? `<div class="small text-danger">Ahorro: -${moneda} ${calc.ahorro.toFixed(2)}</div>` : ''}
-            ${calc.iva > 0 ? `<div class="small">IVA (15%): ${moneda} ${calc.iva.toFixed(2)}</div>` : ''}
-            <div class="h4 mt-2 fw-bold" style="color:var(--brand-color)">TOTAL: ${moneda} ${calc.total.toLocaleString()}</div>`;
+    if(carrito.length === 0) {
+        listaV.innerHTML = '<div class="p-5 text-center text-muted"><p class="small mb-0">No hay servicios seleccionados</p></div>';
+        document.getElementById('resumen_totales').innerHTML = "";
+        return;
     }
+
+    let subtotal = 0;
+    listaV.innerHTML = "";
+
+    // 2. Recorremos usando las variables exactas de tu sistema original (item.nombre, item.cant, item.total)
+    carrito.forEach((item, index) => {
+        // Aseguramos que lea el total acumulado en córdobas que mete tu botón "+ Agregar"
+        let totalOriginal = parseFloat(item.total) || 0;
+
+        // 3. LA CONVERSIÓN: Si es $, divide entre la TASA_CAMBIO (37). Si es C$, pasa directo.
+        let totalCalculado = (moneda === "$") ? (totalOriginal / TASA_CAMBIO) : totalOriginal;
+
+        // Sumamos al subtotal general de la cotización
+        subtotal += totalCalculado;
+
+        // 4. Pintamos tu diseño original sin alterar ninguna clase CSS
+        listaV.innerHTML += `
+            <div class="item-servicio">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-link text-danger p-0 me-3" onclick="eliminarItem(${index})"><i class="fas fa-times-circle"></i></button>
+                    <div><span class="fw-bold">${item.nombre}</span> ${item.cant > 1 ? `<span class="small text-muted">x${item.cant}</span>` : ''}</div>
+                </div>
+                <span class="fw-bold">${moneda} ${totalCalculado.toFixed(2)}</span>
+            </div>`;
+    });
+
+    // 5. PROCESAMOS LOS TOTALES INFERIORES EN CALIENTE
+    const calc = calcularTotales(subtotal);
+
+    document.getElementById('resumen_totales').innerHTML = `
+        <div class="small">Subtotal: ${moneda} ${subtotal.toFixed(2)}</div>
+        ${calc.ahorro > 0 ? `<div class="small text-danger">Ahorro: -${moneda} ${calc.ahorro.toFixed(2)}</div>` : ''}
+        ${calc.iva > 0 ? `<div class="small">IVA (15%): ${moneda} ${calc.iva.toFixed(2)}</div>` : ''}
+        <div class="h4 mt-2 fw-bold" style="color:var(--brand-color)">TOTAL: ${moneda} ${calc.total.toFixed(2)}</div>`;
+}
 
     function calcularTotales(subtotal) {
         let ahorro = 0;
@@ -907,18 +997,54 @@
         const iva = document.getElementById('aplicar_iva').checked ? (base * 0.15) : 0;
         return { subtotal, ahorro, iva, total: base + iva };
     }
-    function toggleCliente() {
-    const switchInput = document.getElementById('activar_cliente');
-    const seccion = document.getElementById('seccion_cliente');
+function toggleCliente() {
+    var switchInput = document.getElementById('activar_cliente');
+    var seccion = document.getElementById('seccion_cliente');
+    var contenedorProforma = document.getElementById('contenedor-proforma-vista');
+    var spanNumero = document.getElementById('num-proforma-dinamico');
 
-    // Esto fuerza a que el diseño se ajuste correctamente
+    // Validación básica
+    if (!switchInput || !seccion) return;
+
     if (switchInput.checked) {
+        // 1. Mostrar la sección con tu estilo important (Tu diseño original)
         seccion.style.setProperty('display', 'block', 'important');
+
+        // 2. Si existen los contenedores del número, los mostramos
+        if (contenedorProforma && spanNumero) {
+            spanNumero.innerText = "Cargando...";
+            contenedorProforma.style.setProperty('display', 'inline-block', 'important');
+
+            // 3. Consulta limpia a Firebase usando promesas tradicionales
+            if (typeof database !== 'undefined' && database.ref) {
+                database.ref('contador_pdf').once('value')
+                    .then(function(snapshot) {
+                        var numeroActual = snapshot.val();
+                        if (numeroActual === null) {
+                            numeroActual = 7560;
+                            database.ref('contador_pdf').set(7560);
+                        }
+                        // Pintamos el número real de Firebase
+                        spanNumero.innerText = numeroActual;
+                    })
+                    .catch(function(error) {
+                        console.error("Error Firebase:", error);
+                        spanNumero.innerText = "7560"; // Respaldo si falla la red
+                    });
+            } else {
+                // Respaldo inmediato si Firebase no cargó en el script global
+                console.warn("Base de datos no definida en este scope.");
+                spanNumero.innerText = "7560";
+            }
+        }
     } else {
+        // Ocultar todo si se apaga el interruptor
         seccion.style.setProperty('display', 'none', 'important');
+        if (contenedorProforma) {
+            contenedorProforma.style.setProperty('display', 'none', 'important');
+        }
     }
 }
-
     function limpiarTodo() {
         carrito = [];
         document.getElementById('aplicar_descuento').checked = false;
@@ -1002,7 +1128,7 @@ async function generarPDF() {
 
     let currentY = 55;
 
-    // --- SECCIÓN DATOS DEL CLIENTE (CORREGIDO) ---
+    // --- SECCIÓN DATOS DEL CLIENTE (MAPEADO EXACTO A TU BLADE) ---
     if (incluirCliente) {
         doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
         doc.setFontSize(11);
@@ -1014,26 +1140,33 @@ async function generarPDF() {
         doc.setTextColor(80);
         doc.setFontSize(9);
 
-        // Captura usando querySelector para evitar errores de ID
-        const nombreC = document.querySelector('[name="cliente_nombre"]')?.value || "N/A";
-        const cedulaC = document.querySelector('[name="cliente_id"]')?.value || "N/A";
-        const telC    = document.querySelector('[name="cliente_telefono"]')?.value || "N/A";
-        const direC   = document.querySelector('[name="cliente_direccion"]')?.value || "N/A";
+        // Captura usando los names exactos que se ven en tu VS Code
+        const nombreC   = document.querySelector('[name="cliente_nombre"]')?.value || "N/A";
+        const contactoC = document.querySelector('[name="cliente_contacto"]')?.value || "N/A";
+        const cedulaC   = document.querySelector('[name="cliente_id"]')?.value || "N/A";
+        const telC      = document.querySelector('[name="cliente_telefono"]')?.value || "N/A";
+        const direC     = document.querySelector('[name="cliente_direccion"]')?.value || "N/A";
 
+        // Fila 1: Cliente y Cédula/RUC
         doc.setFont("helvetica", "bold");  doc.text("Cliente:", 15, currentY + 10);
         doc.setFont("helvetica", "normal"); doc.text(nombreC, 40, currentY + 10);
 
         doc.setFont("helvetica", "bold");  doc.text("Cédula/RUC:", 115, currentY + 10);
         doc.setFont("helvetica", "normal"); doc.text(cedulaC, 145, currentY + 10);
 
-        doc.setFont("helvetica", "bold");  doc.text("Teléfono:", 15, currentY + 16);
-        doc.setFont("helvetica", "normal"); doc.text(telC, 40, currentY + 16);
+        // Fila 2: Contacto y Teléfono
+        doc.setFont("helvetica", "bold");  doc.text("Contacto:", 15, currentY + 18);
+        doc.setFont("helvetica", "normal"); doc.text(contactoC, 40, currentY + 18);
 
-        doc.setFont("helvetica", "bold");  doc.text("Dirección:", 115, currentY + 16);
-        const direccionSplit = doc.splitTextToSize(direC, 50);
-        doc.text(direccionSplit, 145, currentY + 16);
+        doc.setFont("helvetica", "bold");  doc.text("Teléfono:", 115, currentY + 18);
+        doc.setFont("helvetica", "normal"); doc.text(telC, 145, currentY + 18);
 
-        currentY += 28;
+        // Fila 3: Dirección del Proyecto
+        doc.setFont("helvetica", "bold");  doc.text("Dirección:", 15, currentY + 26);
+        const direccionSplit = doc.splitTextToSize(direC, 140);
+        doc.text(direccionSplit, 40, currentY + 26);
+
+        currentY += 28 + (direccionSplit.length * 4);
     }
 
     // --- SECCIÓN LOGÍSTICA ---
@@ -1056,14 +1189,27 @@ async function generarPDF() {
     doc.text(`Destino Final: ${destino}`, 135, currentY + 8);
 
     // --- TABLA DE PRODUCTOS ---
+    // 1. Detectamos la empresa y la moneda UNA SOLA VEZ antes de recorrer el carrito
+    const inputEmpresa = document.getElementById('empresa') ||
+                         document.querySelector('select[name="empresa"]') ||
+                         document.querySelector('input[name="empresa"]:checked');
+
+    // Forzamos a limpiar espacios o textos largos que puedan venir del contenedor
+    const empresaActual = inputEmpresa ? inputEmpresa.value.trim() : 'Espumas';
+
+    // 2. Definimos el símbolo global para esta exportación
+    const simboloMoneda = (empresaActual === 'Pethelios') ? '$' : 'C$';
+
+    // 3. Mapeamos las filas usando el símbolo ya definido fuera
     const rows = carrito.map(i => {
         let nombreMostrar = i.nombre;
         if (i.descripcion_pdf) nombreMostrar += `\nDetalle: ${i.descripcion_pdf}`;
+
         return [
             nombreMostrar,
             i.cant.toString(),
-            `${moneda} ${i.precio.toLocaleString(undefined, {minimumFractionDigits: 2})}`,
-            `${moneda} ${i.total.toLocaleString(undefined, {minimumFractionDigits: 2})}`
+            `${simboloMoneda} ${Number(i.precio).toLocaleString(undefined, {minimumFractionDigits: 2})}`,
+            `${simboloMoneda} ${Number(i.total).toLocaleString(undefined, {minimumFractionDigits: 2})}`
         ];
     });
 
@@ -1078,11 +1224,22 @@ async function generarPDF() {
     });
 
     // --- TOTALES ---
-    currentY = doc.lastAutoTable.finalY + 15;
-    if (currentY > 250) { doc.addPage(); currentY = 30; }
+    currentY = doc.lastAutoTable.finalY + 12;
+    if (currentY > 240) { doc.addPage(); currentY = 30; }
 
     const sub = carrito.reduce((a, b) => a + b.total, 0);
     const calc = calcularTotales(sub);
+
+    // ==========================================
+    // NUEVA MEJORA: Detectar moneda en tiempo real
+    // ==========================================
+    const selectEmpresa = document.getElementById('empresa') ||
+                          document.querySelector('select[name="empresa"]') ||
+                          document.querySelector('input[name="empresa"]:checked');
+
+    const empresaActiva = selectEmpresa ? selectEmpresa.value : 'Espumas';
+    const monedaDinamica = (empresaActiva === 'Pethelios') ? '$' : 'C$';
+    // ==========================================
 
     const drawTotalRow = (label, value, y, isTotal = false) => {
         if (isTotal) {
@@ -1097,60 +1254,107 @@ async function generarPDF() {
             doc.setTextColor(80);
         }
         doc.text(label, 135, y);
-        doc.text(`${moneda} ${value.toLocaleString(undefined, {minimumFractionDigits: 2})}`, 195, y, { align: 'right' });
+
+        // CAMBIO AQUÍ: Usamos 'monedaDinamica' en lugar de la variable estática anterior
+        doc.text(`${monedaDinamica} ${value.toLocaleString(undefined, {minimumFractionDigits: 2})}`, 195, y, { align: 'right' });
     };
 
     drawTotalRow("Subtotal:", calc.subtotal, currentY);
-    currentY += 8;
+    currentY += 7;
     if (calc.ahorro > 0) {
         doc.setTextColor(180, 0, 0);
         drawTotalRow("Descuento aplicado:", -calc.ahorro, currentY);
-        currentY += 8;
+        currentY += 7;
     }
     drawTotalRow("IVA (15%):", calc.iva, currentY);
-    currentY += 15;
+    currentY += 12;
     drawTotalRow("TOTAL NETO:", calc.total, currentY, true);
 
- // --- SECCIÓN DE FIRMA CON TELÉFONO COMPLETO ---
-const vSel = document.querySelector('[name="user_id"]');
+    // --- SECCIÓN DE FIRMA (ESPACIADO COMPACTADO ADAPTATIVO) ---
+    const vSel = document.querySelector('[name="user_id"]');
 
-if (vSel && vSel.selectedIndex > 0) {
-    const textoCompleto = vSel.options[vSel.selectedIndex].text;
+    if (vSel && vSel.selectedIndex > 0) {
+        const textoCompleto = vSel.options[vSel.selectedIndex].text;
 
-    const partes = textoCompleto.split('-');
-    const nombreV = partes[0] ? partes[0].trim() : "";
-    const cargoV  = partes[1] ? partes[1].trim() : "";
+        const partes = textoCompleto.split('-');
+        const nombreV = partes[0] ? partes[0].trim() : "";
+        const cargoV  = partes[1] ? partes[1].trim() : "";
 
-    let telV = "";
-    if (partes.length >= 3) {
-        telV = "Tel: " + partes.slice(2).join('-').trim();
+        let telV = "";
+        if (partes.length >= 3) {
+            telV = "Tel: " + partes.slice(2).join('-').trim();
+        }
+
+        // Reducido a +20 para compactar el espacio excesivo
+        currentY += 20;
+
+        if (currentY > 235) {
+            doc.addPage();
+            currentY = 30;
+        }
+
+        doc.setDrawColor(150);
+        doc.line(70, currentY + 15, 140, currentY + 15);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(50);
+        doc.text(nombreV.toUpperCase(), 105, currentY + 21, { align: 'center' });
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(100);
+        doc.text(cargoV, 105, currentY + 26, { align: 'center' });
+
+        if(telV) {
+            doc.text(telV, 105, currentY + 31, { align: 'center' });
+        }
+
+        currentY += 33;
+    } else {
+        // Margen base si no se selecciona firma para que los textos no se encimen
+        currentY += 10;
     }
 
-    // --- EL AJUSTE PARA EL ESPACIO ---
-    currentY += 40; // <--- Aumenta este número para bajar más la firma
-
-    // Validación para que la firma no se salga de la hoja
-    if (currentY > 240) {
+    // --- ADICIÓN FINAL OBLIGATORIA: VALIDEZ Y DIRECCIÓN GEOGRÁFICA ---
+    // Controlamos el desbordamiento antes de pintar los bloques informativos
+    if (currentY > 245) {
         doc.addPage();
         currentY = 30;
     }
 
-    doc.setDrawColor(0);
-    // Usamos el nuevo currentY para que todo baje en conjunto
-    doc.line(70, currentY + 20, 140, currentY + 20);
+    // 1. Recuadro de Validez
+    doc.setFillColor(248, 250, 252);
+    doc.rect(15, currentY, 180, 10, 'F');
+    doc.setDrawColor(brandColor[0], brandColor[1], brandColor[2]);
+    doc.setLineWidth(0.7);
+    doc.line(15, currentY, 15, currentY + 10); // Borde izquierdo de énfasis decorativo
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text(nombreV.toUpperCase(), 105, currentY + 27, { align: 'center' });
+    doc.setFontSize(9);
+    doc.setTextColor(50);
+    doc.text("Nota Importante:", 19, currentY + 6.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80);
+    doc.text("Esta proforma tiene una validez de 30 dias.", 47, currentY + 6.5);
+
+    currentY += 18;
+
+    // 2. Línea divisoria punteada y Dirección Física Centralizada
+    doc.setDrawColor(200);
+    doc.setLineWidth(0.2);
+    doc.line(30, currentY, 180, currentY);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(60);
+    doc.text("Oficina Central & Distribución", 105, currentY + 6, { align: 'center' });
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.text(cargoV, 105, currentY + 32, { align: 'center' });
+    doc.setFontSize(8.5);
+    doc.setTextColor(100);
+    doc.text("Camino viejo a Santo Domingo. Del AMPM 30m al sur, 300m al oeste. Managua, Nicaragua", 105, currentY + 11, { align: 'center' });
 
-    if(telV) {
-        doc.text(telV, 105, currentY + 37, { align: 'center' });
-    }
-}
     // --- GUARDAR Y ACTUALIZAR ---
     if (incluirCliente) {
         doc.save(`Proforma_${numeroActual}_${emp}.pdf`);
@@ -1158,8 +1362,7 @@ if (vSel && vSel.selectedIndex > 0) {
     } else {
         doc.save(`Presupuesto_${emp}_${new Date().getTime()}.pdf`);
     }
-}
-   // ... aquí termina tu función generarPDF() ...
+}   // ... aquí termina tu función generarPDF() ...
 
     // --- ESTO ES LO QUE DEBES PEGAR ---
 
@@ -1170,7 +1373,7 @@ if (vSel && vSel.selectedIndex > 0) {
 
         if (check && seccion) {
             check.checked = false;          // Switch apagado
-            seccion.style.display = 'none'; // Sección oculta
+           // seccion.style.display = 'none'; // Sección oculta
         }
     });
 
@@ -1227,34 +1430,19 @@ document.addEventListener("DOMContentLoaded", function() {
             if (texto.includes("espuma") || texto.includes("otros")) {
                 contenedorDesc.style.display = 'block'; // Mostrar
             } else {
-                contenedorDesc.style.display = 'none';  // Ocultar
+             //   contenedorDesc.style.display = 'none';  // Ocultar
             }
         });
     }
 });
+
 </script>
 <script>
-document.addEventListener("change", function(event) {
-    // 1. Buscamos el selector de Categoría (el primer cuadro)
-    // Usamos querySelector por si el ID cambia, buscamos el que dice "Categoría"
-    const selectCat = document.querySelector('select[id*="categoria"]') || document.querySelector('select');
-    const contenedor = document.getElementById('contenedor-descripcion');
 
-    if (event.target === selectCat) {
-        const opcionTexto = selectCat.options[selectCat.selectedIndex].text.toUpperCase();
-
-        // 2. Si la categoría seleccionada es "OTROS" o "OTRO"
-        if (opcionTexto.includes("OTRO")) {
-            contenedor.style.display = 'block'; // Aparece arriba del botón
-        } else {
-            contenedor.style.display = 'none';  // Se oculta
-            document.getElementById('descripcion_servicio').value = ''; // Limpia el texto
-        }
-    }
-});
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
 
 <script>
   const firebaseConfig = {
@@ -1272,6 +1460,94 @@ document.addEventListener("change", function(event) {
       firebase.initializeApp(firebaseConfig);
   }
   const database = firebase.database();
+</script>
+<script>
+function toggleCliente() {
+    var switchInput = document.getElementById('activar_cliente');
+    var seccion = document.getElementById('seccion_cliente');
+    var contenedorProforma = document.getElementById('contenedor-proforma-vista');
+    var spanNumero = document.getElementById('num-proforma-dinamico');
+
+    if (!switchInput || !seccion) return;
+
+    if (switchInput.checked) {
+        // 1. Forzar visualización del recuadro de datos
+        seccion.style.setProperty('display', 'block', 'important');
+
+        // 2. Forzar visualización de la etiqueta de proforma
+        if (contenedorProforma && spanNumero) {
+            spanNumero.innerText = "Cargando...";
+            contenedorProforma.style.setProperty('display', 'inline-block', 'important');
+
+            // 3. Consulta directa a Firebase con verificación de existencia
+            if (typeof database !== 'undefined' && database.ref) {
+                database.ref('contador_pdf').once('value')
+                    .then(function(snapshot) {
+                        var numeroActual = snapshot.val();
+                        if (numeroActual === null) {
+                            numeroActual = 7560;
+                            database.ref('contador_pdf').set(7560);
+                        }
+                        spanNumero.innerText = numeroActual;
+                    })
+                    .catch(function(error) {
+                        console.error("Error Firebase:", error);
+                        spanNumero.innerText = "7560"; // Respaldo por error de red
+                    });
+            } else {
+                // Si el script externo de Firebase aún no carga, ponemos el número base de una vez
+                spanNumero.innerText = "7560";
+            }
+        }
+    } else {
+        // Ocultar todo al apagar el switch
+        seccion.style.setProperty('display', 'none', 'important');
+        if (contenedorProforma) {
+            contenedorProforma.style.setProperty('display', 'none', 'important');
+        }
+    }
+}
+
+function cambiarMonedaPorEmpresa() {
+    const empresa = document.getElementById('empresa_selector').value;
+    const monedaSelector = document.getElementById('moneda_selector');
+
+    if (!monedaSelector) return;
+
+    // Limpiamos las opciones previas
+    monedaSelector.innerHTML = "";
+
+    if (empresa === "Espumas") {
+        // Permite alternar ambas monedas
+        monedaSelector.add(new Option("Córdobas (C$)", "C$"));
+        monedaSelector.add(new Option("Dólares ($)", "$"));
+    } else {
+        // Obliga a quedarse únicamente en Dólares
+        monedaSelector.add(new Option("Dólares ($)", "$"));
+    }
+}
+
+// Inicializa las monedas al cargar la página por primera vez
+document.addEventListener("DOMContentLoaded", cambiarMonedaPorEmpresa);
+function cambiarMonedaPorEmpresa() {
+    const empresa = document.getElementById('empresa_selector').value;
+    const monedaSelector = document.getElementById('moneda_selector');
+    if (!monedaSelector) return;
+
+    monedaSelector.innerHTML = "";
+
+    if (empresa === "Espumas") {
+        monedaSelector.add(new Option("Córdobas (C$)", "C$"));
+        monedaSelector.add(new Option("Dólares ($)", "$"));
+    } else {
+        monedaSelector.add(new Option("Dólares ($)", "$"));
+    }
+
+    // Forzar a recalcular y renderizar la lista con la nueva moneda
+    renderLista();
+}
+
+
 </script>
 </body>
 </html>

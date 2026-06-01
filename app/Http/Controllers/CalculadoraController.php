@@ -10,19 +10,19 @@ class CalculadoraController extends Controller
     /**
      * Muestra el formulario principal.
      */
-   public function index()
-{
-    // Creamos la lista manualmente
-    $vendedores = collect([
-        (object)['id' => 1, 'name' => 'Braulio Duarte-Venta Empresarial-7886-2971'],
-        (object)['id' => 2, 'name' => 'Richard Toribio-Venta Domiciliar-75591323'],
-        (object)['id' => 3, 'name' => 'Angie Castro - Venta Domiciliar- 8786-0121'],
-        (object)['id' => 4, 'name' => 'Stefany Mejia-Gerente Comercial- 8998-0892'],
-        (object)['id' => 5, 'name' => 'Guiermo Moreno-Venta Occidente- 8588-3456'],
-    ]);
+    public function index()
+    {
+        // Creamos la lista manualmente
+        $vendedores = collect([
+            (object)['id' => 1, 'name' => 'Braulio Duarte-Jefe deVenta Empresarial-7886-2971'],
+            (object)['id' => 2, 'name' => 'Richard Toribio-Venta Domiciliar-75591323'],
+            (object)['id' => 3, 'name' => 'Angie Castro - Venta Domiciliar- 8786-0121'],
+            (object)['id' => 4, 'name' => 'Stephany Mejia-Gerente Comercial- 8998-0892'],
+            (object)['id' => 5, 'name' => 'Guiermo Moreno-Venta Occidente- 8588-3456'],
+        ]);
 
-    return view('welcome', compact('vendedores'));
-}
+        return view('welcome', compact('vendedores'));
+    }
 
     /**
      * Procesa los datos y genera la vista de la factura.
@@ -33,11 +33,33 @@ class CalculadoraController extends Controller
         $serviciosElegidos = json_decode($request->input('servicios'), true);
         $serviciosElegidos = is_array($serviciosElegidos) ? $serviciosElegidos : [];
 
-        // 2. Capturar datos de Branding y Cliente
+        // 2. CAMBIO AQUÍ: Capturar datos de Branding y Datos del Formulario del Cliente
         $empresa  = $request->input('empresa', 'Espumas');
         $color    = $request->input('color', '#003399');
         $logo     = $request->input('logo', 'LOGOPNG.png');
-        $cliente  = $request->input('cliente', 'Cliente General');
+
+        // Mapeo directo de tus inputs del formulario
+        $cliente   = $request->input('cliente_nombre', 'Cliente General');
+        $contacto  = $request->input('cliente_contacto', 'N/A'); // <--- NUEVO CAMPO CAPTURADO
+        $direccion = $request->input('cliente_direccion', 'N/A');
+        $telefono  = $request->input('cliente_telefono', 'N/A');
+        $ruc       = $request->input('cliente_id', 'N/A');
+
+        // 2.1 Capturar y procesar el Vendedor Seleccionado
+        $vendedores = collect([
+            1 => (object)['nombre' => 'Braulio Duarte', 'cargo' => ' Jefe de Venta Empresarial', 'tel' => '7886-2971'],
+            2 => (object)['nombre' => 'Richard Toribio', 'cargo' => 'Venta Domiciliar', 'tel' => '7559-1323'],
+            3 => (object)['nombre' => 'Angie Castro', 'cargo' => 'Venta Domiciliar', 'tel' => '8786-0121'],
+            4 => (object)['nombre' => 'Stephany Mejia', 'cargo' => 'Gerente Comercial', 'tel' => '8998-0892'],
+            5 => (object)['nombre' => 'Guiermo Moreno', 'cargo' => 'Venta Occidente', 'tel' => '8588-3456'],
+        ]);
+
+        $vendedorId = $request->input('user_id');
+        $vendedorAsignado = $vendedores->get($vendedorId, (object)[
+            'nombre' => 'Jammy Silva',
+            'cargo' => 'Supervisora - Coordinadora',
+            'tel' => '8588-5337'
+        ]);
 
         // 3. Ubicación y Ruta
         $zona     = $request->input('zona', 'N/A');
@@ -47,25 +69,23 @@ class CalculadoraController extends Controller
         // 4. Procesar Totales y Normalizar nombres de servicios
         $subtotalServicios = 0;
         foreach ($serviciosElegidos as &$s) {
-            /** * MEJORA: Validación de llave 'nombre'.
-             * Si no existe 'nombre', intenta usar 'descripcion'.
-             * Si ninguno existe, asigna 'Sin nombre' para evitar el error Exception.
-             */
             if (!isset($s['nombre'])) {
-                $s['nombre'] = $s['descripcion'] ?? 'Servicio/Producto';
+                // Adaptación para que tus items de la factura lean correctamente la llave 'desc'
+                $s['nombre'] = $s['descripcion'] ?? $s['desc'] ?? 'Servicio/Producto';
             }
 
-            // Aseguramos que precio y cantidad sean numéricos para evitar errores de cálculo
+            // Aseguramos que precio y cantidad sean numéricos
             $precio   = isset($s['precio']) ? (float)$s['precio'] : 0;
-            $cantidad = isset($s['cantidad']) ? (float)$s['cantidad'] : 1;
+            // Adaptación para que lea tanto 'cantidad' como 'cant'
+            $cantidad = isset($s['cantidad']) ? (float)$s['cantidad'] : (isset($s['cant']) ? (float)$s['cant'] : 1);
 
-            // Re-asignamos al array para que la vista reciba valores limpios
+            // Re-asignamos al array mapeando las llaves exactas que pide tu factura ('desc' y 'cant')
+            $s['desc'] = $s['nombre'];
+            $s['cant'] = $cantidad;
             $s['precio'] = $precio;
-            $s['cantidad'] = $cantidad;
 
             $subtotalServicios += ($precio * $cantidad);
         }
-        // Limpiamos la referencia para evitar errores de memoria
         unset($s);
 
         // 5. Capturar Gastos Extra y Descuentos
@@ -75,7 +95,7 @@ class CalculadoraController extends Controller
         // 6. Cálculos Finales
         $subtotalGeneral = ($subtotalServicios + $transporte) - $descuento;
 
-        // IVA (15%) - Se calcula sobre el subtotal general
+        // IVA (15%)
         $iva = $request->has('aplicar_iva') ? ($subtotalGeneral * 0.15) : 0;
         $totalFinal = $subtotalGeneral + $iva;
 
@@ -85,24 +105,37 @@ class CalculadoraController extends Controller
         // 8. Fecha y hora Nicaragua
         $ahora = Carbon::now('America/Managua');
 
-        // 9. Retornar la vista con todos los datos procesados
+        // Un contador autogenerado simple en base a la hora para tu factura
+        $nuevoContador = $request->input('contador', $ahora->format('mdHis'));
+
+        // 9. CAMBIO AQUÍ: Pasar todas las nuevas variables limpias a la vista de la factura
         return view('factura', [
-            'empresa'    => $empresa,
-            'color'      => $color,
-            'logo'       => $logo,
-            'cliente'    => $cliente,
-            'zona'       => $zona,
-            'ruta'       => $ruta,
-            'subruta'    => $subruta,
-            'fecha'      => $ahora->format('d/m/Y'),
-            'hora'       => $ahora->format('h:i A'),
-            'servicios'  => $serviciosElegidos,
-            'transporte' => $transporte,
-            'descuento'  => $descuento,
-            'subtotal'   => $subtotalGeneral,
-            'iva'        => $iva,
-            'total'      => $totalFinal,
-            'moneda'     => $moneda
+            'empresa'            => $empresa,
+            'color'              => $color,
+            'logo'               => $logo,
+            'cliente'            => $cliente,
+            'contacto'           => $contacto,   // <--- ENVIADO A LA FACTURA
+            'direccion'          => $direccion,  // <--- ENVIADO A LA FACTURA
+            'telefono'           => $telefono,   // <--- ENVIADO A LA FACTURA
+            'ruc'                => $ruc,        // <--- ENVIADO A LA FACTURA
+            'zona'               => $zona,
+            'ruta'               => $ruta,
+            'subruta'            => $subruta,
+            'fecha'              => $ahora->format('d/m/Y'),
+            'hora'               => $ahora->format('h:i A'),
+            'nuevoContador'      => $nuevoContador,
+            'items'              => $serviciosElegidos, // Mapeado correctamente
+            'transporte'         => $transporte,
+            'descuento'          => $descuento,
+            'subtotal'           => $subtotalGeneral,
+            'iva'                => $iva,
+            'total'              => $totalFinal,
+            'moneda_simbolo'     => $moneda,
+
+            // Datos del vendedor asignado dinámico para la firma
+            'responsable_nombre' => $vendedorAsignado->nombre,
+            'responsable_cargo'  => $vendedorAsignado->cargo,
+            'responsable_tel'    => $vendedorAsignado->tel,
         ]);
     }
 }

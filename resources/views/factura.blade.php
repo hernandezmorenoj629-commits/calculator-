@@ -53,6 +53,11 @@
         }
 
         /* Tablas */
+        .table {
+            table-layout: fixed; /* Mantiene proporciones fijas en las columnas */
+            width: 100%;
+        }
+
         .table thead th {
             background-color: var(--brand-color) !important;
             color: white !important;
@@ -76,6 +81,14 @@
             padding-left: 25px;
         }
 
+        /* Ajuste para evitar desbordamiento de texto largo en descripciones */
+        .col-descripcion {
+            word-wrap: break-word;
+            word-break: break-all;
+            white-space: pre-line;
+            text-align: left !important;
+        }
+
         .info-label {
             font-size: 0.7rem;
             text-transform: uppercase;
@@ -85,11 +98,32 @@
             display: block;
         }
 
+        .value-text {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
         .totals-section {
             background-color: #f8fafc;
             border-radius: 8px;
             padding: 15px;
             border: 1px solid #e2e8f0;
+        }
+
+        /* Firma de Responsable */
+        .signature-section {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .signature-line {
+            width: 200px;
+            border-top: 2px solid var(--brand-color);
+            margin-bottom: 5px;
         }
 
         @media print {
@@ -116,29 +150,57 @@
                 <h3 class="fw-800 mb-0 text-brand">{{ $empresa }}</h3>
                 <div class="text-muted small mt-1">
                     <p class="mb-0">Emisión: {{ $fecha }} | {{ $hora }}</p>
+                    @if(isset($nuevoContador))
+                    <p class="mb-0 fw-bold">No. Cotización: {{ $nuevoContador }}</p>
+                    @endif
                 </div>
             </div>
             <div class="col-6 text-end">
                 <span class="badge border border-primary text-primary px-3 py-2 mb-3 text-uppercase fw-bold">Cotización Oficial</span>
-                <h6 class="info-label">Cliente</h6>
-                <h4 class="fw-bold text-dark mb-0">{{ $cliente }}</h4>
+
+                <div class="row text-start justify-content-end">
+                    <div class="col-10 border-start ps-3 mb-2">
+                        <span class="info-label">Cliente</span>
+                        <h5 class="fw-bold text-dark mb-1">{{ $cliente }}</h5>
+                        @if(isset($ruc) && $ruc !== 'N/A')
+                        <span class="text-muted small d-block"><strong>RUC/Cédula:</strong> {{ $ruc }}</span>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="mx-5 mb-4 py-3 bg-light rounded-3 border">
-        <div class="row text-center g-0">
-            <div class="col-4 border-end">
-                <span class="info-label">Zona</span>
-                <span class="fw-bold text-dark small">{{ $zona }}</span>
+    <div class="mx-5 mb-4 p-3 bg-light rounded-3 border">
+        <div class="row g-3">
+            <div class="col-6 border-end pe-3">
+                <div class="mb-2">
+                    <span class="info-label"><i class="fas fa-address-book me-1"></i> Contacto de Entrega</span>
+                    <span class="value-text">{{ $contacto ?? 'N/A' }}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="info-label"><i class="fas fa-phone me-1"></i> Teléfono</span>
+                    <span class="value-text">{{ $telefono ?? 'N/A' }}</span>
+                </div>
+                <div>
+                    <span class="info-label"><i class="fas fa-map-marker-alt me-1"></i> Dirección exacta</span>
+                    <span class="value-text text-muted" style="font-size: 0.85rem;">{{ $direccion ?? 'N/A' }}</span>
+                </div>
             </div>
-            <div class="col-4 border-end">
-                <span class="info-label">Ruta / Carretera</span>
-                <span class="fw-bold text-dark small">{{ $ruta ?? 'Ruta' }}</span>
-            </div>
-            <div class="col-4">
-                <span class="info-label">Sub-Ruta (Destino)</span>
-                <span class="fw-bold text-dark small">{{ $subruta ?? 'Sub-Ruta' }}</span>
+
+            <div class="col-6 ps-3 d-flex flex-column justify-content-center">
+                <div class="mb-2">
+                    <span class="info-label">Zona de Envío</span>
+                    <span class="fw-bold text-dark small">{{ $zona }}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="info-label">Ruta / Carretera</span>
+                    <span class="fw-bold text-dark small">{{ $ruta ?? 'Ruta' }}</span>
+                </div>
+                <div>
+                    <span class="info-label">Sub-Ruta (Destino)</span>
+                    <span class="fw-bold text-dark small">{{ $subruta ?? 'Sub-Ruta' }}</span>
+                </div>
             </div>
         </div>
     </div>
@@ -148,7 +210,7 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Descripción</th>
+                        <th style="width: 50%">Descripción</th>
                         <th style="width: 10%">Cant.</th>
                         <th style="width: 20%">Precio Unit.</th>
                         <th style="width: 20%">Subtotal</th>
@@ -157,10 +219,10 @@
                 <tbody>
                     @forelse($servicios as $s)
                     <tr>
-                        <td><span class="fw-600 text-dark">{{ $s['nombre'] }}</span></td>
-                        <td class="fw-bold">{{ $s['cantidad'] }}</td>
-                        <td class="text-muted">{{ $moneda }} {{ number_format($s['precio'], 2) }}</td>
-                        <td class="fw-bold text-brand">{{ $moneda }} {{ number_format($s['cantidad'] * $s['precio'], 2) }}</td>
+                        <td class="col-descripcion"><span class="fw-600 text-dark">{{ $s['desc'] ?? $s['nombre'] }}</span></td>
+                        <td class="fw-bold">{{ $s['cant'] ?? $s['cantidad'] }}</td>
+                        <td class="text-muted">{{ $moneda_simbolo ?? $moneda }} {{ number_format($s['precio'], 2) }}</td>
+                        <td class="fw-bold text-brand">{{ $moneda_simbolo ?? $moneda }} {{ number_format(($s['cant'] ?? $s['cantidad']) * $s['precio'], 2) }}</td>
                     </tr>
                     @empty
                     <tr>
@@ -176,25 +238,25 @@
                 <div class="totals-section">
                     <div class="d-flex justify-content-between mb-1">
                         <span class="text-muted small">Transporte:</span>
-                        <span class="fw-semibold small text-dark">{{ $moneda }} {{ number_format($transporte, 2) }}</span>
+                        <span class="fw-semibold small text-dark">{{ $moneda_simbolo ?? $moneda }} {{ number_format($transporte, 2) }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-1">
                         <span class="text-muted small">Descuento:</span>
-                        <span class="text-danger fw-semibold small">-{{ $moneda }} {{ number_format($descuento, 2) }}</span>
+                        <span class="text-danger fw-semibold small">-{{ $moneda_simbolo ?? $moneda }} {{ number_format($descuento, 2) }}</span>
                     </div>
                     <div class="d-flex justify-content-between border-top pt-2 mb-1">
                         <span class="fw-bold text-dark small">SUBTOTAL:</span>
-                        <span class="fw-bold text-dark small">{{ $moneda }} {{ number_format($subtotal, 2) }}</span>
+                        <span class="fw-bold text-dark small">{{ $moneda_simbolo ?? $moneda }} {{ number_format($subtotal, 2) }}</span>
                     </div>
                     @if($iva > 0)
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted small">IVA (15%):</span>
-                        <span class="fw-semibold small text-dark">{{ $moneda }} {{ number_format($iva, 2) }}</span>
+                        <span class="fw-semibold small text-dark">{{ $moneda_simbolo ?? $moneda }} {{ number_format($iva, 2) }}</span>
                     </div>
                     @endif
                     <div class="d-flex justify-content-between bg-brand p-2 rounded text-white mt-2">
                         <span class="fw-bold">TOTAL:</span>
-                        <span class="fw-bold h5 mb-0">{{ $moneda }} {{ number_format($total, 2) }}</span>
+                        <span class="fw-bold h5 mb-0">{{ $moneda_simbolo ?? $moneda }} {{ number_format($total, 2) }}</span>
                     </div>
                 </div>
             </div>
@@ -202,12 +264,23 @@
     </div>
 
     <div class="p-5 text-center mt-auto">
-        <div class="border-top pt-3 mb-4">
+        <div class="row justify-content-center mb-4">
+            <div class="col-6 signature-section">
+                <div class="signature-line"></div>
+                <span class="fw-bold text-dark small text-uppercase">{{ $responsable_nombre ?? 'Jammy Silva' }}</span>
+                <span class="text-muted d-block" style="font-size: 0.75rem;">{{ $responsable_cargo ?? 'Supervisora - Coordinadora' }}</span>
+                @if(isset($responsable_tel))
+                <span class="text-dark fw-semibold" style="font-size: 0.75rem;">TEL: {{ $responsable_tel }}</span>
+                @endif
+            </div>
+        </div>
+
+        <div class="border-top pt-3">
             <p class="mb-1 fw-bold text-brand">¡Gracias por su preferencia!</p>
             <p class="text-dark mb-0" style="font-size: 0.85rem; font-weight: 600;">
                 Esta proforma tiene una validez de 30 días calendario.
             </p>
-            <p class="text-muted" style="font-size: 0.75rem;">
+            <p class="text-muted mb-0" style="font-size: 0.75rem;">
                 Vence el: {{ \Carbon\Carbon::parse($fecha)->addDays(30)->format('d/m/Y') }}
             </p>
         </div>
