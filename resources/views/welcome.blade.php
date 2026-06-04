@@ -853,23 +853,23 @@
     // BLOQUEO TOTAL POR VISIBILIDAD
     // ==========================================
     // Si el contenedor de descripción está a la vista (display !== 'none')
-    if (contenedorDesc && contenedorDesc.style.display !== 'none') {
+   // if (contenedorDesc && contenedorDesc.style.display !== 'none') {
 
         // Si el usuario no escribió nada
-        if (descripcionInput.value.trim() === "") {
+     //   if (descripcionInput.value.trim() === "") {
 
             // 1. Aviso visual
-            descripcionInput.style.border = "2px solid red";
-            descripcionInput.style.backgroundColor = "#fff0f0";
-            descripcionInput.focus();
+       //     descripcionInput.style.border = "2px solid red";
+         //   descripcionInput.style.backgroundColor = "#fff0f0";
+           // descripcionInput.focus();
 
             // 2. Alerta al usuario
-            alert("❌ BLOQUEO: La descripción es obligatoria para este servicio.");
+            //alert("❌ BLOQUEO: La descripción es obligatoria para este servicio.");
 
             // 3. CORTAR EL VIAJE: No permite seguir a la suma ni al carrito
-            return;
-        }
-    }
+            //return;
+        //}
+    //}
 
     // --- SI LLEGÓ AQUÍ, EL SERVICIO ES VÁLIDO O NO NECESITA DESCRIPCIÓN ---
 
