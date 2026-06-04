@@ -568,6 +568,15 @@
             "Alfombras Fijas": [
                 { nombre: "Alfombras Fijas (M2)", precio_bajo: 250, precio_alto: 150, limite: 100, dinamico: true }
             ],
+            "Alfombras Móviles": [
+    {
+        nombre: "Alfombras Móviles (M2)",
+        precio_bajo: 250,
+        precio_alto: 250,
+        limite: null,
+        dinamico: true
+    }
+],
             "Vidrios": [
                 { nombre: "Limpieza de Vidrios (M2)", precio_bajo: 250, precio_alto: 150, limite: 100, dinamico: true }
             ],
