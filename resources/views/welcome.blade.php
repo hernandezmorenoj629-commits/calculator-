@@ -535,6 +535,7 @@
             { nombre: "Sofá doble (Limpieza Profunda)", precio: 1400 },
             { nombre: "Sofá triple (Limpieza Profunda)", precio: 1600 },
             { nombre: "Sofa Cuadruple (Limpieza Profunda)", precio: 2000 },
+            { nombre: "Sofa En L (Limpieza Profunda)", precio: 2800 },
 
         ],
 
