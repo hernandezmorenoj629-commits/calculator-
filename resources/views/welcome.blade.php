@@ -1052,317 +1052,328 @@ function toggleCliente() {
         cambiarEmpresa();
     }
 async function generarPDF() {
-    if(carrito.length === 0) return alert("Agregue servicios para generar la cotización");
+    if(carrito.length === 0) return alert("Agregue servicios para generar la cotización");
 
-    const { jsPDF } = window.jspdf;
+    const { jsPDF } = window.jspdf;
 
-    // --- CONFIGURACIÓN INICIAL ---
-    const doc = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-    });
+    // --- CONFIGURACIÓN INICIAL ---
+    const doc = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+    });
 
-    const emp = document.getElementById('empresa_selector').value;
-    const moneda = (emp === "Pethelios") ? "$" : "C$";
-    const brandColor = (emp === "Espumas") ? [0, 51, 153] : [159, 97, 49];
+    const emp = document.getElementById('empresa_selector').value;
+    const moneda = (emp === "Pethelios") ? "$" : "C$";
+    const brandColor = (emp === "Espumas") ? [0, 51, 153] : [159, 97, 49];
 
-    // --- CONEXIÓN CON FIREBASE PARA CORRELATIVO ---
-    const incluirCliente = document.getElementById('activar_cliente')?.checked;
-    let numeroActual = 7560;
+    // --- CONEXIÓN CON FIREBASE PARA CORRELATIVO ---
+    const incluirCliente = document.getElementById('activar_cliente')?.checked;
+    let numeroActual = 7560;
 
-    if (incluirCliente) {
-        try {
-            const snapshot = await database.ref('contador_pdf').once('value');
-            const valorNube = snapshot.val();
-            if (valorNube !== null) {
-                numeroActual = valorNube;
-            } else {
-                await database.ref('contador_pdf').set(7560);
-            }
-        } catch (error) {
-            console.error("Error Firebase:", error);
-        }
-    }
+    if (incluirCliente) {
+        try {
+            const snapshot = await database.ref('contador_pdf').once('value');
+            const valorNube = snapshot.val();
+            if (valorNube !== null) {
+                numeroActual = valorNube;
+            } else {
+                await database.ref('contador_pdf').set(7560);
+            }
+        } catch (error) {
+            console.error("Error Firebase:", error);
+        }
+    }
 
-    // 1. CABECERA (RECTÁNGULO DE COLOR)
-    doc.setFillColor(...brandColor);
-    doc.rect(0, 0, 210, 45, 'F');
+    // 1. CABECERA (RECTÁNGULO DE COLOR)
+    doc.setFillColor(...brandColor);
+    doc.rect(0, 0, 210, 45, 'F');
 
-    // 2. TEXTO EN CABECERA
-    if (incluirCliente) {
-        doc.setFontSize(14);
-        doc.setTextColor(255, 255, 255);
-        doc.setFont("helvetica", "bold");
-        doc.text(`No. Proforma: ${numeroActual}`, 150, 25);
-    }
+    // 2. TEXTO EN CABECERA
+    if (incluirCliente) {
+        doc.setFontSize(14);
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.text(`No. Proforma: ${numeroActual}`, 150, 25);
+    }
 
-    // --- LOGO OPTIMIZADO ---
-    const img = document.getElementById('img-logo');
-    try {
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(45, 10, 25, 25, 2, 2, 'F');
+    // --- LOGO OPTIMIZADO ---
+    const img = document.getElementById('img-logo');
+    try {
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(45, 10, 25, 25, 2, 2, 'F');
 
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 200; canvas.height = 200;
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, 200, 200);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 200; canvas.height = 200;
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, 200, 200);
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.7);
-        doc.addImage(imgData, 'JPEG', 47, 12, 21, 21, undefined, 'FAST');
-    } catch (e) { console.warn("Logo no cargado"); }
+        const imgData = canvas.toDataURL('image/jpeg', 0.7);
+        doc.addImage(imgData, 'JPEG', 47, 12, 21, 21, undefined, 'FAST');
+    } catch (e) { console.warn("Logo no cargado"); }
 
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.text(emp.toUpperCase(), 75, 22);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.text(emp.toUpperCase(), 75, 22);
 
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    const textoCabecera = incluirCliente ? "COTIZACIÓN DE SERVICIOS" : "PRESUPUESTO DE SERVICIOS";
-    doc.text(textoCabecera, 75, 29);
-    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 75, 34);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    const textoCabecera = incluirCliente ? "COTIZACIÓN DE SERVICIOS" : "PRESUPUESTO DE SERVICIOS";
+    doc.text(textoCabecera, 75, 29);
+    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 75, 34);
 
-    let currentY = 55;
+    let currentY = 55;
 
-    // --- SECCIÓN DATOS DEL CLIENTE (MAPEADO EXACTO A TU BLADE) ---
-    if (incluirCliente) {
-        doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.text("DATOS DEL CLIENTE", 15, currentY);
-        doc.setDrawColor(220);
-        doc.line(15, currentY + 2, 195, currentY + 2);
+    // --- SECCIÓN DATOS DEL CLIENTE (MAPEADO EXACTO A TU BLADE) ---
+    if (incluirCliente) {
+        doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text("DATOS DEL CLIENTE", 15, currentY);
+        doc.setDrawColor(220);
+        doc.line(15, currentY + 2, 195, currentY + 2);
 
-        doc.setTextColor(80);
-        doc.setFontSize(9);
+        doc.setTextColor(80);
+        doc.setFontSize(9);
 
-        // Captura usando los names exactos que se ven en tu VS Code
-        const nombreC   = document.querySelector('[name="cliente_nombre"]')?.value || "N/A";
-        const contactoC = document.querySelector('[name="cliente_contacto"]')?.value || "N/A";
-        const cedulaC   = document.querySelector('[name="cliente_id"]')?.value || "N/A";
-        const telC      = document.querySelector('[name="cliente_telefono"]')?.value || "N/A";
-        const direC     = document.querySelector('[name="cliente_direccion"]')?.value || "N/A";
+        // Captura usando los names exactos que se ven en tu VS Code
+        const nombreC   = document.querySelector('[name="cliente_nombre"]')?.value || "N/A";
+        const contactoC = document.querySelector('[name="cliente_contacto"]')?.value || "N/A";
+        const cedulaC   = document.querySelector('[name="cliente_id"]')?.value || "N/A";
+        const telC      = document.querySelector('[name="cliente_telefono"]')?.value || "N/A";
+        const direC     = document.querySelector('[name="cliente_direccion"]')?.value || "N/A";
 
-        // Fila 1: Cliente y Cédula/RUC
-        doc.setFont("helvetica", "bold");  doc.text("Cliente:", 15, currentY + 10);
-        doc.setFont("helvetica", "normal"); doc.text(nombreC, 40, currentY + 10);
+        // Fila 1: Cliente y Cédula/RUC
+        doc.setFont("helvetica", "bold");  doc.text("Cliente:", 15, currentY + 10);
+        doc.setFont("helvetica", "normal"); doc.text(nombreC, 40, currentY + 10);
 
-        doc.setFont("helvetica", "bold");  doc.text("Cédula/RUC:", 115, currentY + 10);
-        doc.setFont("helvetica", "normal"); doc.text(cedulaC, 145, currentY + 10);
+        doc.setFont("helvetica", "bold");  doc.text("Cédula/RUC:", 115, currentY + 10);
+        doc.setFont("helvetica", "normal"); doc.text(cedulaC, 145, currentY + 10);
 
-        // Fila 2: Contacto y Teléfono
-        doc.setFont("helvetica", "bold");  doc.text("Contacto:", 15, currentY + 18);
-        doc.setFont("helvetica", "normal"); doc.text(contactoC, 40, currentY + 18);
+        // Fila 2: Contacto y Teléfono
+        doc.setFont("helvetica", "bold");  doc.text("Contacto:", 15, currentY + 18);
+        doc.setFont("helvetica", "normal"); doc.text(contactoC, 40, currentY + 18);
 
-        doc.setFont("helvetica", "bold");  doc.text("Teléfono:", 115, currentY + 18);
-        doc.setFont("helvetica", "normal"); doc.text(telC, 145, currentY + 18);
+        doc.setFont("helvetica", "bold");  doc.text("Teléfono:", 115, currentY + 18);
+        doc.setFont("helvetica", "normal"); doc.text(telC, 145, currentY + 18);
 
-        // Fila 3: Dirección del Proyecto
-        doc.setFont("helvetica", "bold");  doc.text("Dirección:", 15, currentY + 26);
-        const direccionSplit = doc.splitTextToSize(direC, 140);
-        doc.text(direccionSplit, 40, currentY + 26);
+        // Fila 3: Dirección del Proyecto
+        doc.setFont("helvetica", "bold");  doc.text("Dirección:", 15, currentY + 26);
+        const direccionSplit = doc.splitTextToSize(direC, 140);
+        doc.text(direccionSplit, 40, currentY + 26);
 
-        currentY += 28 + (direccionSplit.length * 4);
-    }
+        currentY += 28 + (direccionSplit.length * 4);
+    }
 
-    // --- SECCIÓN LOGÍSTICA ---
-    doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("DETALLES DE LOGÍSTICA Y ENTREGA", 15, currentY);
-    doc.setDrawColor(220);
-    doc.line(15, currentY + 2, 195, currentY + 2);
+    // --- SECCIÓN LOGÍSTICA ---
+    doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("DETALLES DE LOGÍSTICA Y ENTREGA", 15, currentY);
+    doc.setDrawColor(220);
+    doc.line(15, currentY + 2, 195, currentY + 2);
 
-    doc.setTextColor(80);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    const zona = document.getElementById('trans_zona')?.value || "No especificado";
-    const ruta = document.getElementById('trans_ruta')?.value || "No especificado";
-    const destino = document.getElementById('trans_subruta')?.value || "Recogida en sucursal";
+    doc.setTextColor(80);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    const zona = document.getElementById('trans_zona')?.value || "No especificado";
+    const ruta = document.getElementById('trans_ruta')?.value || "No especificado";
+    const destino = document.getElementById('trans_subruta')?.value || "Recogida en sucursal";
 
-    doc.text(`Zona: ${zona}`, 15, currentY + 8);
-    doc.text(`Ruta: ${ruta}`, 75, currentY + 8);
-    doc.text(`Destino Final: ${destino}`, 135, currentY + 8);
+    doc.text(`Zona: ${zona}`, 15, currentY + 8);
+    doc.text(`Ruta: ${ruta}`, 75, currentY + 8);
+    doc.text(`Destino Final: ${destino}`, 135, currentY + 8);
 
-    // --- TABLA DE PRODUCTOS ---
-    // 1. Detectamos la empresa y la moneda UNA SOLA VEZ antes de recorrer el carrito
-    const inputEmpresa = document.getElementById('empresa') ||
-                         document.querySelector('select[name="empresa"]') ||
-                         document.querySelector('input[name="empresa"]:checked');
+    // --- TABLA DE PRODUCTOS ---
+    const inputEmpresa = document.getElementById('empresa') ||
+                         document.querySelector('select[name="empresa"]') ||
+                         document.querySelector('input[name="empresa"]:checked');
 
-    // Forzamos a limpiar espacios o textos largos que puedan venir del contenedor
-    const empresaActual = inputEmpresa ? inputEmpresa.value.trim() : 'Espumas';
+    const empresaActual = inputEmpresa ? inputEmpresa.value.trim() : 'Espumas';
+    const simboloMoneda = (empresaActual === 'Pethelios') ? '$' : 'C$';
 
-    // 2. Definimos el símbolo global para esta exportación
-    const simboloMoneda = (empresaActual === 'Pethelios') ? '$' : 'C$';
+    const rows = carrito.map(i => {
+        let nombreMostrar = i.nombre;
+        if (i.descripcion_pdf) nombreMostrar += `\nDetalle: ${i.descripcion_pdf}`;
 
-    // 3. Mapeamos las filas usando el símbolo ya definido fuera
-    const rows = carrito.map(i => {
-        let nombreMostrar = i.nombre;
-        if (i.descripcion_pdf) nombreMostrar += `\nDetalle: ${i.descripcion_pdf}`;
+        return [
+            nombreMostrar,
+            i.cant.toString(),
+            `${simboloMoneda} ${Number(i.precio).toLocaleString(undefined, {minimumFractionDigits: 2})}`,
+            `${simboloMoneda} ${Number(i.total).toLocaleString(undefined, {minimumFractionDigits: 2})}`
+        ];
+    });
 
-        return [
-            nombreMostrar,
-            i.cant.toString(),
-            `${simboloMoneda} ${Number(i.precio).toLocaleString(undefined, {minimumFractionDigits: 2})}`,
-            `${simboloMoneda} ${Number(i.total).toLocaleString(undefined, {minimumFractionDigits: 2})}`
-        ];
-    });
+    doc.autoTable({
+        startY: currentY + 15,
+        head: [['Descripción del Servicio / Producto', 'Cant.', 'Precio Unit.', 'Subtotal']],
+        body: rows,
+        theme: 'striped',
+        headStyles: { fillColor: brandColor, textColor: 255, fontStyle: 'bold', halign: 'center' },
+        margin: { left: 15, right: 15 },
+        styles: { overflow: 'linebreak' }
+    });
 
-    doc.autoTable({
-        startY: currentY + 15,
-        head: [['Descripción del Servicio / Producto', 'Cant.', 'Precio Unit.', 'Subtotal']],
-        body: rows,
-        theme: 'striped',
-        headStyles: { fillColor: brandColor, textColor: 255, fontStyle: 'bold', halign: 'center' },
-        margin: { left: 15, right: 15 },
-        styles: { overflow: 'linebreak' }
-    });
+    // --- TOTALES ---
+    currentY = doc.lastAutoTable.finalY + 12;
+    if (currentY > 240) { doc.addPage(); currentY = 30; }
 
-    // --- TOTALES ---
-    currentY = doc.lastAutoTable.finalY + 12;
-    if (currentY > 240) { doc.addPage(); currentY = 30; }
+    const sub = carrito.reduce((a, b) => a + b.total, 0);
 
-    const sub = carrito.reduce((a, b) => a + b.total, 0);
-    const calc = calcularTotales(sub);
+    // ========================================================
+    // CORRECCIÓN ULTRA-SEGURA DE DETECCIÓN DEL SWITCH DE IVA
+    // ========================================================
+    let calc = calcularTotales(sub);
 
-    // ==========================================
-    // NUEVA MEJORA: Detectar moneda en tiempo real
-    // ==========================================
-    const selectEmpresa = document.getElementById('empresa') ||
-                          document.querySelector('select[name="empresa"]') ||
-                          document.querySelector('input[name="empresa"]:checked');
+    // Buscamos el interruptor por ID o por atributo name alternativo
+    const switchIva = document.getElementById('iva_switch') ||
+                      document.getElementById('aplicar_iva') ||
+                      document.querySelector('[name="aplicar_iva"]');
 
-    const empresaActiva = selectEmpresa ? selectEmpresa.value : 'Espumas';
-    const monedaDinamica = (empresaActiva === 'Pethelios') ? '$' : 'C$';
-    // ==========================================
+    // Si el elemento existe, lee si está marcado (checked). Si NO existe, por defecto es FALSE.
+    const aplicarIva = switchIva ? switchIva.checked : false;
 
-    const drawTotalRow = (label, value, y, isTotal = false) => {
-        if (isTotal) {
-            doc.setFillColor(245, 245, 245);
-            doc.rect(130, y - 6, 65, 10, 'F');
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.setTextColor(...brandColor);
-        } else {
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(10);
-            doc.setTextColor(80);
-        }
-        doc.text(label, 135, y);
+    if (aplicarIva) {
+        // Si está activado, calculamos el 15% rigurosamente
+        calc.iva = calc.subtotal * 0.15;
+        calc.total = calc.subtotal - (calc.ahorro || 0) + calc.iva;
+    } else {
+        // Si NO está activado (o está apagado), el IVA pasa a ser C$ 0.00 de inmediato
+        calc.iva = 0;
+        calc.total = calc.subtotal - (calc.ahorro || 0);
+    }
+    // ========================================================
 
-        // CAMBIO AQUÍ: Usamos 'monedaDinamica' en lugar de la variable estática anterior
-        doc.text(`${monedaDinamica} ${value.toLocaleString(undefined, {minimumFractionDigits: 2})}`, 195, y, { align: 'right' });
-    };
+    const selectEmpresa = document.getElementById('empresa') ||
+                          document.querySelector('select[name="empresa"]') ||
+                          document.querySelector('input[name="empresa"]:checked');
 
-    drawTotalRow("Subtotal:", calc.subtotal, currentY);
-    currentY += 7;
-    if (calc.ahorro > 0) {
-        doc.setTextColor(180, 0, 0);
-        drawTotalRow("Descuento aplicado:", -calc.ahorro, currentY);
-        currentY += 7;
-    }
-    drawTotalRow("IVA (15%):", calc.iva, currentY);
-    currentY += 12;
-    drawTotalRow("TOTAL NETO:", calc.total, currentY, true);
+    const empresaActiva = selectEmpresa ? selectEmpresa.value : 'Espumas';
+    const monedaDinamica = (empresaActiva === 'Pethelios') ? '$' : 'C$';
 
-    // --- SECCIÓN DE FIRMA (ESPACIADO COMPACTADO ADAPTATIVO) ---
-    const vSel = document.querySelector('[name="user_id"]');
+    const drawTotalRow = (label, value, y, isTotal = false) => {
+        if (isTotal) {
+            doc.setFillColor(245, 245, 245);
+            doc.rect(130, y - 6, 65, 10, 'F');
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.setTextColor(...brandColor);
+        } else {
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(80);
+        }
+        doc.text(label, 135, y);
+        doc.text(`${monedaDinamica} ${value.toLocaleString(undefined, {minimumFractionDigits: 2})}`, 195, y, { align: 'right' });
+    };
 
-    if (vSel && vSel.selectedIndex > 0) {
-        const textoCompleto = vSel.options[vSel.selectedIndex].text;
+    drawTotalRow("Subtotal:", calc.subtotal, currentY);
+    currentY += 7;
+    if (calc.ahorro > 0) {
+        doc.setTextColor(180, 0, 0);
+        drawTotalRow("Descuento aplicado:", -calc.ahorro, currentY);
+        currentY += 7;
+    }
+    drawTotalRow("IVA (15%):", calc.iva, currentY);
+    currentY += 12;
+    drawTotalRow("TOTAL NETO:", calc.total, currentY, true);
 
-        const partes = textoCompleto.split('-');
-        const nombreV = partes[0] ? partes[0].trim() : "";
-        const cargoV  = partes[1] ? partes[1].trim() : "";
+    // --- SECCIÓN DE FIRMA (ESPACIADO COMPACTADO ADAPTATIVO) ---
+    const vSel = document.querySelector('[name="user_id"]');
 
-        let telV = "";
-        if (partes.length >= 3) {
-            telV = "Tel: " + partes.slice(2).join('-').trim();
-        }
+    if (vSel && vSel.selectedIndex > 0) {
+        const textoCompleto = vSel.options[vSel.selectedIndex].text;
 
-        // Reducido a +20 para compactar el espacio excesivo
-        currentY += 20;
+        const partes = textoCompleto.split('-');
+        const nombreV = partes[0] ? partes[0].trim() : "";
+        const cargoV  = partes[1] ? partes[1].trim() : "";
 
-        if (currentY > 235) {
-            doc.addPage();
-            currentY = 30;
-        }
+        let telV = "";
+        if (partes.length >= 3) {
+            telV = "Tel: " + partes.slice(2).join('-').trim();
+        }
 
-        doc.setDrawColor(150);
-        doc.line(70, currentY + 15, 140, currentY + 15);
+        currentY += 20;
 
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.setTextColor(50);
-        doc.text(nombreV.toUpperCase(), 105, currentY + 21, { align: 'center' });
+        if (currentY > 235) {
+            doc.addPage();
+            currentY = 30;
+        }
 
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.setTextColor(100);
-        doc.text(cargoV, 105, currentY + 26, { align: 'center' });
+        doc.setDrawColor(150);
+        doc.line(70, currentY + 15, 140, currentY + 15);
 
-        if(telV) {
-            doc.text(telV, 105, currentY + 31, { align: 'center' });
-        }
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(50);
+        doc.text(nombreV.toUpperCase(), 105, currentY + 21, { align: 'center' });
 
-        currentY += 33;
-    } else {
-        // Margen base si no se selecciona firma para que los textos no se encimen
-        currentY += 10;
-    }
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(100);
+        doc.text(cargoV, 105, currentY + 26, { align: 'center' });
 
-    // --- ADICIÓN FINAL OBLIGATORIA: VALIDEZ Y DIRECCIÓN GEOGRÁFICA ---
-    // Controlamos el desbordamiento antes de pintar los bloques informativos
-    if (currentY > 245) {
-        doc.addPage();
-        currentY = 30;
-    }
+        if(telV) {
+            doc.text(telV, 105, currentY + 31, { align: 'center' });
+        }
 
-    // 1. Recuadro de Validez
-    doc.setFillColor(248, 250, 252);
-    doc.rect(15, currentY, 180, 10, 'F');
-    doc.setDrawColor(brandColor[0], brandColor[1], brandColor[2]);
-    doc.setLineWidth(0.7);
-    doc.line(15, currentY, 15, currentY + 10); // Borde izquierdo de énfasis decorativo
+        currentY += 33;
+    } else {
+        currentY += 10;
+    }
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(50);
-    doc.text("Nota Importante:", 19, currentY + 6.5);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(80);
-    doc.text("Esta proforma tiene una validez de 30 dias.", 47, currentY + 6.5);
+    // --- ADICIÓN FINAL OBLIGATORIA: VALIDEZ Y DIRECCIÓN GEOGRÁFICA ---
+    if (currentY > 245) {
+        doc.addPage();
+        currentY = 30;
+    }
 
-    currentY += 18;
+    // 1. Recuadro de Validez
+    doc.setFillColor(248, 250, 252);
+    doc.rect(15, currentY, 180, 10, 'F');
+    doc.setDrawColor(brandColor[0], brandColor[1], brandColor[2]);
+    doc.setLineWidth(0.7);
+    doc.line(15, currentY, 15, currentY + 10);
 
-    // 2. Línea divisoria punteada y Dirección Física Centralizada
-    doc.setDrawColor(200);
-    doc.setLineWidth(0.2);
-    doc.line(30, currentY, 180, currentY);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(50);
+    doc.text("Nota Importante:", 19, currentY + 6.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80);
+    doc.text("Esta proforma tiene una validez de 30 dias.", 47, currentY + 6.5);
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(60);
-    doc.text("Oficina Central & Distribución", 105, currentY + 6, { align: 'center' });
+    currentY += 18;
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(100);
-    doc.text("Camino viejo a Santo Domingo. Del AMPM 30m al sur, 300m al oeste. Managua, Nicaragua", 105, currentY + 11, { align: 'center' });
+    // 2. Línea divisoria punteada y Dirección Física Centralizada
+    doc.setDrawColor(200);
+    doc.setLineWidth(0.2);
+    doc.line(30, currentY, 180, currentY);
 
-    // --- GUARDAR Y ACTUALIZAR ---
-    if (incluirCliente) {
-        doc.save(`Proforma_${numeroActual}_${emp}.pdf`);
-        await database.ref('contador_pdf').set(numeroActual + 1);
-    } else {
-        doc.save(`Presupuesto_${emp}_${new Date().getTime()}.pdf`);
-    }
-}   // ... aquí termina tu función generarPDF() ...
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(60);
+    doc.text("Oficina Central & Distribución", 105, currentY + 6, { align: 'center' });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(100);
+    doc.text("Camino viejo a Santo Domingo. Del AMPM 30m al sur, 300m al oeste. Managua, Nicaragua", 105, currentY + 11, { align: 'center' });
+
+    // --- GUARDAR Y ACTUALIZAR ---
+    if (incluirCliente) {
+        doc.save(`Proforma_${numeroActual}_${emp}.pdf`);
+        await database.ref('contador_pdf').set(numeroActual + 1);
+    } else {
+        doc.save(`Presupuesto_${emp}_${new Date().getTime()}.pdf`);
+   
+}
+}
+ // ... aquí termina tu función generarPDF() ...
 
     // --- ESTO ES LO QUE DEBES PEGAR ---
 
