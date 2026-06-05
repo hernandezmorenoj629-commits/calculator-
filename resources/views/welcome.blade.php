@@ -951,11 +951,15 @@
     const emp = document.getElementById('empresa_selector').value;
 
     // 1. Captura correctamente la moneda elegida en el centro de tu barra blanca
-    const moneda = document.getElementById('moneda_selector')?.value || "C$";
+const moneda = document.getElementById('moneda_selector')?.value || "C$";
 
-    const listaV = document.getElementById('lista_visual');
-    document.getElementById('badge-items').innerText = `${carrito.length} items`;
+const listaV = document.getElementById('lista_visual');
+document.getElementById('badge-items').innerText = `${carrito.length} items`;
 
+// 🚀 NUEVA LÍNEA: Asigna la moneda elegida al input oculto que va hacia Laravel
+if(document.getElementById('moneda_input_oculto')) {
+    document.getElementById('moneda_input_oculto').value = moneda;
+}
     if(carrito.length === 0) {
         listaV.innerHTML = '<div class="p-5 text-center text-muted"><p class="small mb-0">No hay servicios seleccionados</p></div>';
         document.getElementById('resumen_totales').innerHTML = "";
@@ -1197,26 +1201,41 @@ async function generarPDF() {
     doc.text(`Zona: ${zona}`, 15, currentY + 8);
     doc.text(`Ruta: ${ruta}`, 75, currentY + 8);
     doc.text(`Destino Final: ${destino}`, 135, currentY + 8);
+// --- TABLA DE PRODUCTOS ---
+ // --- TABLA DE PRODUCTOS ---
+    const inputEmpresa = document.getElementById('empresa') ||
+                         document.querySelector('select[name="empresa"]') ||
+                         document.querySelector('input[name="empresa"]:checked');
 
-    // --- TABLA DE PRODUCTOS ---
-    const inputEmpresa = document.getElementById('empresa') ||
-                         document.querySelector('select[name="empresa"]') ||
-                         document.querySelector('input[name="empresa"]:checked');
+    const empresaActual = inputEmpresa ? inputEmpresa.value.trim() : 'Espumas';
 
-    const empresaActual = inputEmpresa ? inputEmpresa.value.trim() : 'Espumas';
-    const simboloMoneda = (empresaActual === 'Pethelios') ? '$' : 'C$';
+    // Captura si el usuario eligió C$ o $
+    const simboloMoneda = document.getElementById('moneda_selector')?.value || "C$";
 
-    const rows = carrito.map(i => {
-        let nombreMostrar = i.nombre;
-        if (i.descripcion_pdf) nombreMostrar += `\nDetalle: ${i.descripcion_pdf}`;
+    // TASA DE CAMBIO: Modifica este número por el que uses actualmente en Nicaragua
+    const tasaCambio = 37;
 
-        return [
-            nombreMostrar,
-            i.cant.toString(),
-            `${simboloMoneda} ${Number(i.precio).toLocaleString(undefined, {minimumFractionDigits: 2})}`,
-            `${simboloMoneda} ${Number(i.total).toLocaleString(undefined, {minimumFractionDigits: 2})}`
-        ];
-    });
+    const rows = carrito.map(i => {
+        let nombreMostrar = i.nombre;
+        if (i.descripcion_pdf) nombreMostrar += `\nDetalle: ${i.descripcion_pdf}`;
+
+        // MATH: Si es Dólares ($), divide el precio de córdobas entre la tasa de cambio.
+        // Si es Córdobas, se queda igual.
+        let precioCalculado = Number(i.precio);
+        let totalCalculado = Number(i.total);
+
+        if (simboloMoneda === "$") {
+            precioCalculado = precioCalculado / tasaCambio;
+            totalCalculado = totalCalculado / tasaCambio;
+        }
+
+        return [
+            nombreMostrar,
+            i.cant.toString(),
+            `${simboloMoneda} ${precioCalculado.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+            `${simboloMoneda} ${totalCalculado.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+        ];
+    });
 
     doc.autoTable({
         startY: currentY + 15,
@@ -1227,70 +1246,75 @@ async function generarPDF() {
         margin: { left: 15, right: 15 },
         styles: { overflow: 'linebreak' }
     });
+// --- TOTALES ---
+    currentY = doc.lastAutoTable.finalY + 12;
+    if (currentY > 240) { doc.addPage(); currentY = 30; }
 
-    // --- TOTALES ---
-    currentY = doc.lastAutoTable.finalY + 12;
-    if (currentY > 240) { doc.addPage(); currentY = 30; }
+    const sub = carrito.reduce((a, b) => a + b.total, 0);
 
-    const sub = carrito.reduce((a, b) => a + b.total, 0);
+    // ========================================================
+    // CORRECCIÓN ULTRA-SEGURA DE DETECCIÓN DEL SWITCH DE IVA
+    // ========================================================
+    let calc = calcularTotales(sub);
 
-    // ========================================================
-    // CORRECCIÓN ULTRA-SEGURA DE DETECCIÓN DEL SWITCH DE IVA
-    // ========================================================
-    let calc = calcularTotales(sub);
+    // Buscamos el interruptor por ID o por atributo name alternativo
+    const switchIva = document.getElementById('iva_switch') ||
+                      document.getElementById('aplicar_iva') ||
+                      document.querySelector('[name="aplicar_iva"]');
 
-    // Buscamos el interruptor por ID o por atributo name alternativo
-    const switchIva = document.getElementById('iva_switch') ||
-                      document.getElementById('aplicar_iva') ||
-                      document.querySelector('[name="aplicar_iva"]');
+    // Si el elemento existe, lee si está marcado (checked). Si NO existe, por defecto es FALSE.
+    const aplicarIva = switchIva ? switchIva.checked : false;
 
-    // Si el elemento existe, lee si está marcado (checked). Si NO existe, por defecto es FALSE.
-    const aplicarIva = switchIva ? switchIva.checked : false;
+    if (aplicarIva) {
+        // Si está activado, calculamos el 15% rigurosamente
+        calc.iva = calc.subtotal * 0.15;
+        calc.total = calc.subtotal - (calc.ahorro || 0) + calc.iva;
+    } else {
+        // Si NO está activado (o está apagado), el IVA pasa a ser C$ 0.00 de inmediato
+        calc.iva = 0;
+        calc.total = calc.subtotal - (calc.ahorro || 0);
+    }
+    // ========================================================
 
-    if (aplicarIva) {
-        // Si está activado, calculamos el 15% rigurosamente
-        calc.iva = calc.subtotal * 0.15;
-        calc.total = calc.subtotal - (calc.ahorro || 0) + calc.iva;
-    } else {
-        // Si NO está activado (o está apagado), el IVA pasa a ser C$ 0.00 de inmediato
-        calc.iva = 0;
-        calc.total = calc.subtotal - (calc.ahorro || 0);
-    }
-    // ========================================================
+    // 🚀 MEJORA AQUÍ: Usamos la misma variable que lee tu selector de arriba
+    const monedaDinamica = simboloMoneda;
 
-    const selectEmpresa = document.getElementById('empresa') ||
-                          document.querySelector('select[name="empresa"]') ||
-                          document.querySelector('input[name="empresa"]:checked');
+    // 🚀 MATH: Si estás cobrando en Dólares ($), dividimos los totales globales por la tasa de cambio
+    if (monedaDinamica === "$") {
+        calc.subtotal = calc.subtotal / tasaCambio;
+        calc.iva = calc.iva / tasaCambio;
+        calc.total = calc.total / tasaCambio;
+        if (calc.ahorro > 0) {
+            calc.ahorro = calc.ahorro / tasaCambio;
+        }
+    }
 
-    const empresaActiva = selectEmpresa ? selectEmpresa.value : 'Espumas';
-    const monedaDinamica = (empresaActiva === 'Pethelios') ? '$' : 'C$';
+    const drawTotalRow = (label, value, y, isTotal = false) => {
+        if (isTotal) {
+            doc.setFillColor(245, 245, 245);
+            doc.rect(130, y - 6, 65, 10, 'F');
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.setTextColor(...brandColor);
+        } else {
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(80);
+        }
+        doc.text(label, 135, y);
+        doc.text(`${monedaDinamica} ${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 195, y, { align: 'right' });
+    };
 
-    const drawTotalRow = (label, value, y, isTotal = false) => {
-        if (isTotal) {
-            doc.setFillColor(245, 245, 245);
-            doc.rect(130, y - 6, 65, 10, 'F');
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.setTextColor(...brandColor);
-        } else {
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(10);
-            doc.setTextColor(80);
-        }
-        doc.text(label, 135, y);
-        doc.text(`${monedaDinamica} ${value.toLocaleString(undefined, {minimumFractionDigits: 2})}`, 195, y, { align: 'right' });
-    };
-
-    drawTotalRow("Subtotal:", calc.subtotal, currentY);
-    currentY += 7;
-    if (calc.ahorro > 0) {
-        doc.setTextColor(180, 0, 0);
-        drawTotalRow("Descuento aplicado:", -calc.ahorro, currentY);
-        currentY += 7;
-    }
-    drawTotalRow("IVA (15%):", calc.iva, currentY);
-    currentY += 12;
-    drawTotalRow("TOTAL NETO:", calc.total, currentY, true);
+    drawTotalRow("Subtotal:", calc.subtotal, currentY);
+    currentY += 7;
+    if (calc.ahorro > 0) {
+        doc.setTextColor(180, 0, 0);
+        drawTotalRow("Descuento aplicado:", -calc.ahorro, currentY);
+        currentY += 7;
+    }
+    drawTotalRow("IVA (15%):", calc.iva, currentY);
+    currentY += 12;
+    drawTotalRow("TOTAL NETO:", calc.total, currentY, true);
 
     // --- SECCIÓN DE FIRMA (ESPACIADO COMPACTADO ADAPTATIVO) ---
     const vSel = document.querySelector('[name="user_id"]');

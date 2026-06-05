@@ -33,14 +33,14 @@ class CalculadoraController extends Controller
         $serviciosElegidos = json_decode($request->input('servicios'), true);
         $serviciosElegidos = is_array($serviciosElegidos) ? $serviciosElegidos : [];
 
-        // 2. CAMBIO AQUÍ: Capturar datos de Branding y Datos del Formulario del Cliente
+        // 2. Capturar datos de Branding y Datos del Formulario del Cliente
         $empresa  = $request->input('empresa', 'Espumas');
         $color    = $request->input('color', '#003399');
         $logo     = $request->input('logo', 'LOGOPNG.png');
 
         // Mapeo directo de tus inputs del formulario
         $cliente   = $request->input('cliente_nombre', 'Cliente General');
-        $contacto  = $request->input('cliente_contacto', 'N/A'); // <--- NUEVO CAMPO CAPTURADO
+        $contacto  = $request->input('cliente_contacto', 'N/A');
         $direccion = $request->input('cliente_direccion', 'N/A');
         $telefono  = $request->input('cliente_telefono', 'N/A');
         $ruc       = $request->input('cliente_id', 'N/A');
@@ -70,16 +70,14 @@ class CalculadoraController extends Controller
         $subtotalServicios = 0;
         foreach ($serviciosElegidos as &$s) {
             if (!isset($s['nombre'])) {
-                // Adaptación para que tus items de la factura lean correctamente la llave 'desc'
                 $s['nombre'] = $s['descripcion'] ?? $s['desc'] ?? 'Servicio/Producto';
             }
 
             // Aseguramos que precio y cantidad sean numéricos
             $precio   = isset($s['precio']) ? (float)$s['precio'] : 0;
-            // Adaptación para que lea tanto 'cantidad' como 'cant'
             $cantidad = isset($s['cantidad']) ? (float)$s['cantidad'] : (isset($s['cant']) ? (float)$s['cant'] : 1);
 
-            // Re-asignamos al array mapeando las llaves exactas que pide tu factura ('desc' y 'cant')
+            // Re-asignamos al array mapeando las llaves exactas que pide tu factura
             $s['desc'] = $s['nombre'];
             $s['cant'] = $cantidad;
             $s['precio'] = $precio;
@@ -92,15 +90,32 @@ class CalculadoraController extends Controller
         $transporte = (float)$request->input('transporte', 0);
         $descuento  = (float)$request->input('descuento_total', 0);
 
-        // 6. Cálculos Finales
+        // 6. Configurar Moneda y Tasa de Cambio Dinámica
+        $moneda = $request->input('moneda', 'C$');
+        $tasaCambio = 37.00; // 🚀 Sincronizado perfectamente con tu JavaScript de tasa 37
+
+        // 🚀 CONVERSIÓN MATEMÁTICA: Si la moneda seleccionada es dólares, dividimos los valores base
+        if ($moneda === '$') {
+            $subtotalServicios = $subtotalServicios / $tasaCambio;
+            $transporte = $transporte / $tasaCambio;
+            $descuento = $descuento / $tasaCambio;
+
+            // También convertimos los precios unitarios de la lista de items para que la tabla cuadre
+            foreach ($serviciosElegidos as &$item) {
+                $item['precio'] = $item['precio'] / $tasaCambio;
+            }
+            unset($item);
+        }
+
+        // 6.1 Cálculos Finales (Procesados limpiamente en la moneda correcta)
         $subtotalGeneral = ($subtotalServicios + $transporte) - $descuento;
 
         // IVA (15%)
         $iva = $request->has('aplicar_iva') ? ($subtotalGeneral * 0.15) : 0;
         $totalFinal = $subtotalGeneral + $iva;
 
-        // 7. Configurar Moneda
-        $moneda = ($empresa === 'Pethelios') ? '$' : 'C$';
+        // 7. Configurar Moneda (🚀 CORREGIDO: Eliminada la línea estática que forzaba Córdobas)
+        $monedaSimbolo = $moneda;
 
         // 8. Fecha y hora Nicaragua
         $ahora = Carbon::now('America/Managua');
@@ -108,29 +123,29 @@ class CalculadoraController extends Controller
         // Un contador autogenerado simple en base a la hora para tu factura
         $nuevoContador = $request->input('contador', $ahora->format('mdHis'));
 
-        // 9. CAMBIO AQUÍ: Pasar todas las nuevas variables limpias a la vista de la factura
+        // 9. Pasar todas las variables ajustadas a la vista de la factura
         return view('factura', [
             'empresa'            => $empresa,
             'color'              => $color,
             'logo'               => $logo,
             'cliente'            => $cliente,
-            'contacto'           => $contacto,   // <--- ENVIADO A LA FACTURA
-            'direccion'          => $direccion,  // <--- ENVIADO A LA FACTURA
-            'telefono'           => $telefono,   // <--- ENVIADO A LA FACTURA
-            'ruc'                => $ruc,        // <--- ENVIADO A LA FACTURA
+            'contacto'           => $contacto,
+            'direccion'          => $direccion,
+            'telefono'           => $telefono,
+            'ruc'                => $ruc,
             'zona'               => $zona,
             'ruta'               => $ruta,
             'subruta'            => $subruta,
             'fecha'              => $ahora->format('d/m/Y'),
             'hora'               => $ahora->format('h:i A'),
             'nuevoContador'      => $nuevoContador,
-            'items'              => $serviciosElegidos, // Mapeado correctamente
+            'items'              => $serviciosElegidos,
             'transporte'         => $transporte,
             'descuento'          => $descuento,
             'subtotal'           => $subtotalGeneral,
             'iva'                => $iva,
             'total'              => $totalFinal,
-            'moneda_simbolo'     => $moneda,
+            'moneda_simbolo'     => $monedaSimbolo,
 
             // Datos del vendedor asignado dinámico para la firma
             'responsable_nombre' => $vendedorAsignado->nombre,
