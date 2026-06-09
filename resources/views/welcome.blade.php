@@ -1265,14 +1265,17 @@ async function generarPDF() {
     // Si el elemento existe, lee si está marcado (checked). Si NO existe, por defecto es FALSE.
     const aplicarIva = switchIva ? switchIva.checked : false;
 
+    // --- RE-CÁLCULO DE IVA SOBRE BASE IMPONIBLE REAL (SUBTOTAL - DESCUENTO) ---
+    const ahorroCordobas = calc.ahorro || 0;
+    const baseImponibleCordobas = calc.subtotal - ahorroCordobas;
+
     if (aplicarIva) {
-        // Si está activado, calculamos el 15% rigurosamente
-        calc.iva = calc.subtotal * 0.15;
-        calc.total = calc.subtotal - (calc.ahorro || 0) + calc.iva;
+        // 🔥 CORRECCIÓN AQUÍ: El IVA se calcula sobre la base imponible con el descuento ya restado
+        calc.iva = baseImponibleCordobas * 0.15;
+        calc.total = baseImponibleCordobas + calc.iva;
     } else {
-        // Si NO está activado (o está apagado), el IVA pasa a ser C$ 0.00 de inmediato
         calc.iva = 0;
-        calc.total = calc.subtotal - (calc.ahorro || 0);
+        calc.total = baseImponibleCordobas;
     }
     // ========================================================
 
@@ -1312,10 +1315,10 @@ async function generarPDF() {
         drawTotalRow("Descuento aplicado:", -calc.ahorro, currentY);
         currentY += 7;
     }
+    doc.setTextColor(80); // Asegura que las letras del IVA vuelvan a ser gris y no rojas
     drawTotalRow("IVA (15%):", calc.iva, currentY);
     currentY += 12;
     drawTotalRow("TOTAL NETO:", calc.total, currentY, true);
-
     // --- SECCIÓN DE FIRMA (ESPACIADO COMPACTADO ADAPTATIVO) ---
     const vSel = document.querySelector('[name="user_id"]');
 
