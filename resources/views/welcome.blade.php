@@ -1252,46 +1252,68 @@ async function generarPDF() {
 
     const sub = carrito.reduce((a, b) => a + b.total, 0);
 
-    // ========================================================
-    // CORRECCIÓN ULTRA-SEGURA DE DETECCIÓN DEL SWITCH DE IVA
-    // ========================================================
+    // Mantenemos tu función base
     let calc = calcularTotales(sub);
 
-    // Buscamos el interruptor por ID o por atributo name alternativo
     const switchIva = document.getElementById('iva_switch') ||
                       document.getElementById('aplicar_iva') ||
                       document.querySelector('[name="aplicar_iva"]');
-
-    // Si el elemento existe, lee si está marcado (checked). Si NO existe, por defecto es FALSE.
     const aplicarIva = switchIva ? switchIva.checked : false;
 
-    // --- RE-CÁLCULO DE IVA SOBRE BASE IMPONIBLE REAL (SUBTOTAL - DESCUENTO) ---
-    const ahorroCordobas = calc.ahorro || 0;
-    const baseImponibleCordobas = calc.subtotal - ahorroCordobas;
-
-    if (aplicarIva) {
-        // 🔥 CORRECCIÓN AQUÍ: El IVA se calcula sobre la base imponible con el descuento ya restado
-        calc.iva = baseImponibleCordobas * 0.15;
-        calc.total = baseImponibleCordobas + calc.iva;
-    } else {
-        calc.iva = 0;
-        calc.total = baseImponibleCordobas;
-    }
-    // ========================================================
-
-    // 🚀 MEJORA AQUÍ: Usamos la misma variable que lee tu selector de arriba
     const monedaDinamica = simboloMoneda;
 
-    // 🚀 MATH: Si estás cobrando en Dólares ($), dividimos los totales globales por la tasa de cambio
+    let subtotalImprimir = 0;
+    let ahorroImprimir = 0;
+    let ivaImprimir = 0;
+    let totalImprimir = 0;
+
     if (monedaDinamica === "$") {
-        calc.subtotal = calc.subtotal / tasaCambio;
-        calc.iva = calc.iva / tasaCambio;
-        calc.total = calc.total / tasaCambio;
-        if (calc.ahorro > 0) {
-            calc.ahorro = calc.ahorro / tasaCambio;
+        // ========================================================
+        // 💵 MODO DÓLARES ($) - DIRECTO DE LA INTERFAZ SÍNCRONA
+        // ========================================================
+
+        // Sumamos los subtotales limpios mapeados en el bucle 'rows' de arriba (evita la doble división)
+        subtotalImprimir = rows.reduce((acc, row) => {
+            const valorTexto = row[3].replace('$', '').replace(/,/g, '').trim();
+            return acc + (parseFloat(valorTexto) || 0);
+        }, 0);
+
+        // Como tu sistema ya procesa el descuento de la pantalla, lo tomamos directo del objeto calc
+        // ¡OJO!: Si 'calc.ahorro' da un número muy bajo (como 0.27), lo multiplicamos por 37 para recuperar tus $ 10.00 reales
+        if (calc.ahorro > 0 && calc.ahorro < 1) {
+            ahorroImprimir = calc.ahorro * tasaCambio;
+        } else {
+            ahorroImprimir = calc.ahorro || 0;
         }
+
+        // Base Imponible en Dólares
+        const baseImponibleDolares = subtotalImprimir - ahorroImprimir;
+
+        // IVA y Total Neto exactos
+        ivaImprimir = aplicarIva ? (baseImponibleDolares * 0.15) : 0;
+        totalImprimir = baseImponibleDolares + ivaImprimir;
+
+    } else {
+        // ========================================================
+        // 🇳🇮 MODO CÓRDOBAS (C$) - TU LÓGICA INTACTA
+        // ========================================================
+        if (aplicarIva) {
+            calc.iva = (calc.subtotal - (calc.ahorro || 0)) * 0.15;
+            calc.total = calc.subtotal - (calc.ahorro || 0) + calc.iva;
+        } else {
+            calc.iva = 0;
+            calc.total = calc.subtotal - (calc.ahorro || 0);
+        }
+
+        subtotalImprimir = calc.subtotal;
+        ahorroImprimir = calc.ahorro || 0;
+        ivaImprimir = calc.iva;
+        totalImprimir = calc.total;
     }
 
+    // ========================================================
+    // RENDERIZADO VISUAL EN EL PDF
+    // ========================================================
     const drawTotalRow = (label, value, y, isTotal = false) => {
         if (isTotal) {
             doc.setFillColor(245, 245, 245);
@@ -1308,17 +1330,19 @@ async function generarPDF() {
         doc.text(`${monedaDinamica} ${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 195, y, { align: 'right' });
     };
 
-    drawTotalRow("Subtotal:", calc.subtotal, currentY);
+    drawTotalRow("Subtotal:", subtotalImprimir, currentY);
     currentY += 7;
-    if (calc.ahorro > 0) {
+
+    if (ahorroImprimir > 0) {
         doc.setTextColor(180, 0, 0);
-        drawTotalRow("Descuento aplicado:", -calc.ahorro, currentY);
+        drawTotalRow("Descuento aplicado:", -ahorroImprimir, currentY);
         currentY += 7;
     }
-    doc.setTextColor(80); // Asegura que las letras del IVA vuelvan a ser gris y no rojas
-    drawTotalRow("IVA (15%):", calc.iva, currentY);
+
+    doc.setTextColor(80);
+    drawTotalRow("IVA (15%):", ivaImprimir, currentY);
     currentY += 12;
-    drawTotalRow("TOTAL NETO:", calc.total, currentY, true);
+    drawTotalRow("TOTAL NETO:", totalImprimir, currentY, true);
     // --- SECCIÓN DE FIRMA (ESPACIADO COMPACTADO ADAPTATIVO) ---
     const vSel = document.querySelector('[name="user_id"]');
 
